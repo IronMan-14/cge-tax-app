@@ -1129,3 +1129,20 @@ body.dark-mode .regime-col.active {
     padding-top: 10px;
   }
 }
+
+/* Custom Status and Highlight Classes */
+.status-due {
+  color: var(--md-sys-color-warning) !important;
+}
+.status-refund {
+  color: var(--md-sys-color-success) !important;
+}
+.highlight-input {
+  border-color: var(--md-sys-color-primary) !important;
+  border-width: 2px !important;
+  font-weight: 600 !important;
+  background-color: hsl(var(--md-primary-h), 20%, 97%) !important;
+}
+body.dark-mode .highlight-input {
+  background-color: hsl(var(--md-primary-h), 20%, 14%) !important;
+}

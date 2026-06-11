@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CGE Salary & Tax Calculator</title>
+  <title>CGE Salary & Tax Calculator (FY 2025-26)</title>
   
   <!-- PWA Meta Tags -->
   <meta name="theme-color" content="#6750A4">
@@ -30,7 +30,7 @@
         <svg class="app-logo" viewBox="0 0 24 24" width="24" height="24">
           <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4 6h-4v2h4v2h-4v2h4v2H9V7h6v2z" fill="currentColor"/>
         </svg>
-        <h1>CGE Pay & Tax</h1>
+        <h1>CGE Pay & Tax <span class="header-sub">FY 25-26</span></h1>
       </div>
       <button class="icon-button" id="theme-toggle" aria-label="Toggle dark mode">
         <!-- Sun Icon -->
@@ -51,8 +51,8 @@
     <!-- TAB 1: SALARY CALCULATOR -->
     <section id="tab-salary" class="tab-panel active">
       <div class="panel-header">
-        <h2>7th CPC Salary Calculator</h2>
-        <p>Estimate your split-period monthly gross pay based on Pay Matrix and DA standards.</p>
+        <h2>Advanced Salary Engine</h2>
+        <p>Simulation of monthly components, increments, 3-period DA, and arrears for FY 2025-26.</p>
       </div>
 
       <div class="card-grid">
@@ -63,7 +63,7 @@
           <div class="form-group toggle-group">
             <div class="toggle-info">
               <label for="quarters-toggle" class="toggle-title">Staying in Official Quarters</label>
-              <span class="helper-text">Checking this overrides city tiers and sets HRA to ₹0.</span>
+              <span class="helper-text">Overrides city HRA classification and sets HRA to ₹0.</span>
             </div>
             <label class="m3-switch">
               <input type="checkbox" id="quarters-toggle">
@@ -96,26 +96,47 @@
                 <option value="18">Level 18 (₹2,50,000)</option>
               </select>
             </div>
-            <span class="helper-text">Auto-fills the minimum starting Basic Pay.</span>
+            <span class="helper-text">Auto-fills the minimum starting March Base Pay.</span>
           </div>
 
           <div class="form-group">
-            <label for="basic-pay" class="m3-label">Basic Pay (₹ per month)</label>
+            <label for="basic-pay" class="m3-label">March Base Basic Pay (₹ per month)</label>
             <input type="number" id="basic-pay" class="m3-input" value="56100" min="18000" step="100" placeholder="e.g. 56100">
-            <span class="helper-text">You can manually edit this to match your current basic pay.</span>
+            <span class="helper-text">March salary serves as the reference base pay for this FY.</span>
           </div>
 
           <div class="da-split-group">
             <div class="form-group">
-              <label for="da-percent-p1" class="m3-label">DA % (Apr - Jun)</label>
-              <input type="number" id="da-percent-p1" class="m3-input" value="50" min="0" max="150" step="0.5" placeholder="e.g. 50">
+              <label for="increment-amount" class="m3-label">Increment Amount (₹)</label>
+              <input type="number" id="increment-amount" class="m3-input" value="1700" min="0" step="100" placeholder="e.g. 1700">
             </div>
             <div class="form-group">
-              <label for="da-percent-p2" class="m3-label">DA % (Jul - Mar)</label>
-              <input type="number" id="da-percent-p2" class="m3-input" value="53" min="0" max="150" step="0.5" placeholder="e.g. 53">
+              <label for="increment-month" class="m3-label">Increment Month</label>
+              <div class="select-wrapper">
+                <select id="increment-month" class="m3-select">
+                  <option value="March">March</option>
+                  <option value="April">April</option>
+                  <option value="May">May</option>
+                  <option value="June">June</option>
+                  <option value="July">July</option>
+                  <option value="August">August</option>
+                  <option value="September">September</option>
+                  <option value="October">October</option>
+                  <option value="November">November</option>
+                  <option value="December">December</option>
+                  <option value="January" selected>January</option>
+                  <option value="February">February</option>
+                </select>
+              </div>
             </div>
           </div>
-          <span class="helper-text">Allowance split: Period 1 (3 months) and Period 2 (9 months).</span>
+          <span class="helper-text">Applies basic pay upgrade in selected month & remaining months.</span>
+
+          <div class="form-group">
+            <label for="cea-received" class="m3-label">Children Education Allowance Received (₹)</label>
+            <input type="number" id="cea-received" class="m3-input" value="54000" min="0" step="1000" placeholder="e.g. 54000">
+            <span class="helper-text">Total allowance received during the year (added to Gross Income).</span>
+          </div>
 
           <div class="form-group" id="city-tier-group">
             <label class="m3-label">HRA City Classification</label>
@@ -133,13 +154,13 @@
                 <span class="segment-label">Class Z</span>
               </label>
             </div>
-            <span class="helper-text">Rates: X (27%/30%), Y (18%/20%), Z (9%/10%) depending on if period DA > 50%.</span>
+            <span class="helper-text">Rates: X (30%), Y (20%), Z (10%) of actual monthly basic (DA > 50%).</span>
           </div>
 
           <div class="form-group toggle-group">
             <div class="toggle-info">
               <label for="tpta-toggle" class="toggle-title">Higher TPTA City (Category A)</label>
-              <span class="helper-text">Check if posted in A-tier cities for higher Transport Allowance base rates.</span>
+              <span class="helper-text">Check if posted in A-tier cities for higher Transport Allowance base scales.</span>
             </div>
             <label class="m3-switch">
               <input type="checkbox" id="tpta-toggle" checked>
@@ -152,61 +173,83 @@
         <div class="m3-card card-filled primary-card">
           <h3 class="card-title">Salary Breakdown</h3>
           
-          <div class="salary-totals split-totals">
+          <div class="salary-totals split-totals three-splits">
             <div class="total-item">
-              <span class="total-label">Monthly Gross (Apr - Jun)</span>
+              <span class="total-label">Period 1 (March - 53%)</span>
               <span class="total-value" id="monthly-gross-p1">₹0</span>
             </div>
             <div class="total-item">
-              <span class="total-label">Monthly Gross (Jul - Mar)</span>
+              <span class="total-label">Period 2 (Apr-Sep - 55%)</span>
               <span class="total-value" id="monthly-gross-p2">₹0</span>
             </div>
-            <div class="total-item full-width-total">
-              <span class="total-label">Computed Annual Gross Salary</span>
-              <span class="total-value" id="annual-gross">₹0</span>
+            <div class="total-item">
+              <span class="total-label">Period 3 (Oct-Feb - 58%)</span>
+              <span class="total-value" id="monthly-gross-p3">₹0</span>
+            </div>
+            
+            <div class="total-item full-width-total flex-row-totals">
+              <div>
+                <span class="total-label">DA/TA Arrears (Apr & Oct)</span>
+                <span class="total-value" id="arrears-total-display" style="font-size: 1.5rem;">₹0</span>
+              </div>
+              <div>
+                <span class="total-label">Total Gross Income</span>
+                <span class="total-value" id="annual-gross">₹0</span>
+              </div>
             </div>
           </div>
 
           <div class="divider"></div>
 
-          <h4 class="breakdown-subtitle">Period Comparison</h4>
+          <h4 class="breakdown-subtitle">3-Period Component Details</h4>
           <table class="breakdown-table">
             <thead>
               <tr>
                 <th>Component</th>
-                <th class="text-right">Apr - Jun</th>
-                <th class="text-right">Jul - Mar</th>
+                <th class="text-right">P1 (Mar)</th>
+                <th class="text-right">P2 (Apr-Sep)</th>
+                <th class="text-right">P3 (Oct-Feb)</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>Basic Pay</td>
+                <td>Monthly Basic</td>
                 <td class="text-right" id="breakdown-basic-p1">₹0</td>
                 <td class="text-right" id="breakdown-basic-p2">₹0</td>
+                <td class="text-right" id="breakdown-basic-p3">₹0</td>
               </tr>
               <tr>
                 <td>Dearness Allowance</td>
                 <td class="text-right" id="breakdown-da-p1">₹0</td>
                 <td class="text-right" id="breakdown-da-p2">₹0</td>
+                <td class="text-right" id="breakdown-da-p3">₹0</td>
               </tr>
               <tr>
                 <td>HRA</td>
                 <td class="text-right" id="breakdown-hra-p1">₹0</td>
                 <td class="text-right" id="breakdown-hra-p2">₹0</td>
+                <td class="text-right" id="breakdown-hra-p3">₹0</td>
               </tr>
               <tr>
                 <td>Transport Allowance</td>
                 <td class="text-right" id="breakdown-ta-p1">₹0</td>
                 <td class="text-right" id="breakdown-ta-p2">₹0</td>
+                <td class="text-right" id="breakdown-ta-p3">₹0</td>
               </tr>
             </tbody>
           </table>
+
+          <div class="arrears-breakdown-box">
+            <span class="helper-text font-bold">Arrears Details:</span>
+            <span class="helper-text" id="arrears-p1-text">April Arrears: ₹0</span>
+            <span class="helper-text" id="arrears-p2-text">October Arrears: ₹0</span>
+          </div>
           
           <div class="card-disclosure alert-info" id="hra-notice" style="display: none;">
             <svg viewBox="0 0 24 24" width="16" height="16" class="alert-icon">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="currentColor"/>
             </svg>
-            <span id="hra-notice-text">HRA rates are automatically adjusted when DA crosses 50%. Minimum HRA floor rules applied.</span>
+            <span id="hra-notice-text">Official quarters override active. HRA ₹0.</span>
           </div>
         </div>
       </div>
@@ -216,7 +259,7 @@
     <section id="tab-tax" class="tab-panel">
       <div class="panel-header">
         <h2>Income Tax Estimator</h2>
-        <p>Compare tax liabilities. Old Regime calculations now include Section 10 exemptions.</p>
+        <p>Old vs New Tax Regime comparison. Old Regime includes Section 24(b), 80E, 16(iii) professional tax, and HRA exemptions.</p>
       </div>
 
       <div class="card-grid">
@@ -225,7 +268,7 @@
           <h3 class="card-title">Deductions & Exemptions</h3>
           
           <div class="form-group">
-            <label class="m3-label">Annual Gross Salary (from Salary Tab)</label>
+            <label class="m3-label">Total Gross Income (Salary + Arrears + CEA)</label>
             <div class="read-only-box" id="tax-gross-display">₹0</div>
           </div>
 
@@ -255,7 +298,25 @@
 
           <div class="divider"></div>
 
-          <h4 class="card-subtitle">Section 80 Deductions (Old Regime)</h4>
+          <h4 class="card-subtitle">Old Regime Deductions & Interest</h4>
+
+          <div class="form-group">
+            <label for="deduct-24b" class="m3-label">Section 24(b) Housing Loan Interest (₹)</label>
+            <input type="number" id="deduct-24b" class="m3-input" value="0" min="0" max="300000" step="5000" placeholder="e.g. 0">
+            <span class="helper-text">Interest on self-occupied housing loan. Capped at ₹2,00,000.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="deduct-80e" class="m3-label">Section 80E Education Loan Interest (₹)</label>
+            <input type="number" id="deduct-80e" class="m3-input" value="0" min="0" step="5000" placeholder="e.g. 0">
+            <span class="helper-text">100% deductible for interest paid on educational loans (no limit).</span>
+          </div>
+
+          <div class="form-group">
+            <label for="deduct-prof-tax" class="m3-label">Section 16(iii) Professional Tax (₹)</label>
+            <input type="number" id="deduct-prof-tax" class="m3-input" value="2500" min="0" step="500" placeholder="e.g. 2500">
+            <span class="helper-text">Professional Tax paid. 100% deductible from gross income.</span>
+          </div>
 
           <div class="form-group">
             <label for="deduct-80c" class="m3-label">Section 80C Deductions (₹)</label>
@@ -265,8 +326,8 @@
 
           <div class="form-group">
             <label for="deduct-80d" class="m3-label">Section 80D Medical Insurance (₹)</label>
-            <input type="number" id="deduct-80d" class="m3-input" value="25000" min="0" max="100000" step="1000" placeholder="e.g. 25000">
-            <span class="helper-text">Health insurance for self/parents. Capped at ₹1,00,000.</span>
+            <input type="number" id="deduct-80d" class="m3-input" value="25000" min="0" max="50000" step="1000" placeholder="e.g. 25000">
+            <span class="helper-text">Health insurance premium. Capped at ₹25,000.</span>
           </div>
 
           <div class="form-group">
@@ -284,6 +345,12 @@
             <!-- Dynamically populated saving advice -->
           </div>
 
+          <div class="form-group text-center-vertical" style="margin-bottom: 15px;">
+            <label for="tds-paid" class="m3-label font-bold text-primary">TDS / Income Tax Already Paid (₹)</label>
+            <input type="number" id="tds-paid" class="m3-input highlight-input" value="0" min="0" step="5000" placeholder="e.g. 0">
+            <span class="helper-text">Used to calculate net tax due or refund amount.</span>
+          </div>
+
           <div class="regime-grid">
             <!-- Old Regime -->
             <div class="regime-col" id="old-regime-box">
@@ -294,16 +361,13 @@
                 <span class="stat-value" id="old-taxable">₹0</span>
               </div>
               <div class="regime-stat">
-                <span class="stat-label">Base Tax</span>
-                <span class="stat-value" id="old-base-tax">₹0</span>
-              </div>
-              <div class="regime-stat">
-                <span class="stat-label">Health & Cess (4%)</span>
-                <span class="stat-value" id="old-cess">₹0</span>
-              </div>
-              <div class="regime-stat highlight-stat">
-                <span class="stat-label">Total Tax Due</span>
+                <span class="stat-label">Tax (incl. Cess)</span>
                 <span class="stat-value" id="old-total-tax">₹0</span>
+              </div>
+              <div class="divider"></div>
+              <div class="regime-stat highlight-stat" id="old-refund-due-stat">
+                <span class="stat-label" id="old-refund-due-label">Net Due/Refund</span>
+                <span class="stat-value" id="old-refund-due-val">₹0</span>
               </div>
             </div>
 
@@ -316,16 +380,13 @@
                 <span class="stat-value" id="new-taxable">₹0</span>
               </div>
               <div class="regime-stat">
-                <span class="stat-label">Base Tax</span>
-                <span class="stat-value" id="new-base-tax">₹0</span>
-              </div>
-              <div class="regime-stat">
-                <span class="stat-label">Health & Cess (4%)</span>
-                <span class="stat-value" id="new-cess">₹0</span>
-              </div>
-              <div class="regime-stat highlight-stat">
-                <span class="stat-label">Total Tax Due</span>
+                <span class="stat-label">Tax (incl. Cess)</span>
                 <span class="stat-value" id="new-total-tax">₹0</span>
+              </div>
+              <div class="divider"></div>
+              <div class="regime-stat highlight-stat" id="new-refund-due-stat">
+                <span class="stat-label" id="new-refund-due-label">Net Due/Refund</span>
+                <span class="stat-value" id="new-refund-due-val">₹0</span>
               </div>
             </div>
           </div>
@@ -351,7 +412,7 @@
     <section id="tab-summary" class="tab-panel">
       <div class="panel-header">
         <h2>Tax Filing & Salary Summary</h2>
-        <p>A comprehensive overview of your annual salary components and recommended filing details.</p>
+        <p>A comprehensive overview of your annual salary components, deductions, and tax refunds.</p>
       </div>
 
       <div class="summary-sheet-wrapper">
@@ -363,7 +424,7 @@
             </div>
             <div class="assessment-year">
               <span class="ay-label">Financial Year</span>
-              <span class="ay-value">2025-26 & 2026-27</span>
+              <span class="ay-value">2025-26</span>
             </div>
           </div>
 
@@ -372,13 +433,14 @@
           <div class="summary-row-grid">
             <!-- Salary Section -->
             <div class="summary-section">
-              <h4>Salary Breakdown</h4>
+              <h4>Salary & Receipts Breakdown</h4>
               <table class="summary-table">
                 <thead>
                   <tr>
                     <th>Component</th>
-                    <th class="text-right">Apr - Jun (3m)</th>
-                    <th class="text-right">Jul - Mar (9m)</th>
+                    <th class="text-right">P1 (1m)</th>
+                    <th class="text-right">P2 (6m)</th>
+                    <th class="text-right">P3 (5m)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -386,29 +448,46 @@
                     <td>Basic Pay (Monthly)</td>
                     <td class="text-right" id="sum-basic-p1">₹0</td>
                     <td class="text-right" id="sum-basic-p2">₹0</td>
+                    <td class="text-right" id="sum-basic-p3">₹0</td>
                   </tr>
                   <tr>
                     <td>Dearness Allowance</td>
                     <td class="text-right" id="sum-da-p1">₹0</td>
                     <td class="text-right" id="sum-da-p2">₹0</td>
+                    <td class="text-right" id="sum-da-p3">₹0</td>
                   </tr>
                   <tr>
-                    <td>House Rent Allowance (HRA)</td>
+                    <td>HRA (Monthly)</td>
                     <td class="text-right" id="sum-hra-p1">₹0</td>
                     <td class="text-right" id="sum-hra-p2">₹0</td>
+                    <td class="text-right" id="sum-hra-p3">₹0</td>
                   </tr>
                   <tr>
                     <td>Transport Allowance (TA)</td>
                     <td class="text-right" id="sum-ta-p1">₹0</td>
                     <td class="text-right" id="sum-ta-p2">₹0</td>
+                    <td class="text-right" id="sum-ta-p3">₹0</td>
                   </tr>
                   <tr class="table-total-row">
-                    <td>Monthly Gross Salary</td>
+                    <td>Monthly Gross</td>
                     <td class="text-right" id="sum-monthly-gross-p1">₹0</td>
                     <td class="text-right" id="sum-monthly-gross-p2">₹0</td>
+                    <td class="text-right" id="sum-monthly-gross-p3">₹0</td>
+                  </tr>
+                  <tr class="exemption-row">
+                    <td colspan="2">April Arrears (3 months)</td>
+                    <td class="text-right" id="sum-arr-apr">₹0</td>
+                  </tr>
+                  <tr class="exemption-row">
+                    <td colspan="2">October Arrears (3 months)</td>
+                    <td class="text-right" id="sum-arr-oct">₹0</td>
+                  </tr>
+                  <tr class="exemption-row">
+                    <td colspan="2">CEA Received</td>
+                    <td class="text-right" id="sum-cea-rec">₹0</td>
                   </tr>
                   <tr class="table-grand-total">
-                    <td colspan="2">Annual Gross Salary (3m + 9m)</td>
+                    <td colspan="2">Total Gross Income</td>
                     <td class="text-right" id="sum-annual-gross">₹0</td>
                   </tr>
                 </tbody>
@@ -452,6 +531,21 @@
                     <td class="text-right" id="sum-ex-ltc">-₹0</td>
                     <td class="text-right">N/A</td>
                   </tr>
+                  <tr class="exemption-row">
+                    <td>Housing Interest (Sec 24b)</td>
+                    <td class="text-right" id="sum-ex-24b">-₹0</td>
+                    <td class="text-right">N/A</td>
+                  </tr>
+                  <tr class="exemption-row">
+                    <td>Edu Loan Interest (Sec 80E)</td>
+                    <td class="text-right" id="sum-ex-80e">-₹0</td>
+                    <td class="text-right">N/A</td>
+                  </tr>
+                  <tr class="exemption-row">
+                    <td>Professional Tax (Sec 16iii)</td>
+                    <td class="text-right" id="sum-ex-prof">-₹0</td>
+                    <td class="text-right">N/A</td>
+                  </tr>
                   <tr>
                     <td>Sec 80C Deductions</td>
                     <td class="text-right" id="sum-80c">-₹0</td>
@@ -487,10 +581,20 @@
                     <td class="text-right" id="sum-cess-old">₹0</td>
                     <td class="text-right" id="sum-cess-new">₹0</td>
                   </tr>
-                  <tr class="table-grand-total">
+                  <tr class="table-total-row">
                     <td>Total Tax Liability</td>
                     <td class="text-right text-bold" id="sum-totaltax-old">₹0</td>
                     <td class="text-right text-bold" id="sum-totaltax-new">₹0</td>
+                  </tr>
+                  <tr>
+                    <td>TDS Paid</td>
+                    <td class="text-right" id="sum-tds-old">-₹0</td>
+                    <td class="text-right" id="sum-tds-new">-₹0</td>
+                  </tr>
+                  <tr class="table-grand-total">
+                    <td>Net Payable / Refund</td>
+                    <td class="text-right text-bold" id="sum-net-old">₹0</td>
+                    <td class="text-right text-bold" id="sum-net-new">₹0</td>
                   </tr>
                 </tbody>
               </table>

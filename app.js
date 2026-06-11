@@ -29,28 +29,33 @@ const PAY_LEVEL_MINIMUMS = {
 const state = {
   // Salary Inputs
   payLevel: "10",
-  basicPay: 56100,
-  daPercentP1: 50, // Apr - Jun (3 months)
-  daPercentP2: 53, // Jul - Mar (9 months)
+  basicPay: 56100, // March Base Basic Pay
+  incrementAmount: 1700,
+  incrementMonth: "January",
+  ceaReceived: 54000,
   cityTier: "X", // X, Y, or Z
   isHigherTpta: true,
-  isQuarters: false, // Staying in Official Quarters
+  isQuarters: false,
 
   // Tax Inputs & Deductions
-  rentPaid: 15000, // Monthly rent paid
-  ceaChildren: 2, // 0, 1, or 2 children
-  exemptionLtc: 0, // LTC / Leave Encashment Exemption (Sec 10(5))
-  deduct80C: 150000,
-  deduct80D: 25000,
-  deductNps: 50000,
+  rentPaid: 15000,
+  ceaChildren: 2,
+  exemptionLtc: 0,
+  deduct24b: 0,        // Section 24(b) - capped at 2,00,000
+  deduct80E: 0,        // Section 80E - no limit
+  deductProfTax: 2500, // Section 16(iii) - no limit
+  deduct80C: 150000,   // capped at 1,50,000
+  deduct80D: 25000,    // capped at 25,000
+  deductNps: 50000,    // capped at 50,000
+  tdsPaid: 0,
 
   // Calculated Outputs
-  monthlyGrossP1: 0,
-  monthlyGrossP2: 0,
-  annualGross: 0,
-  breakdownP1: { basic: 0, da: 0, hra: 0, ta: 0 },
-  breakdownP2: { basic: 0, da: 0, hra: 0, ta: 0 },
-  
+  months: [], // Array of 12 month objects representing March to February
+  annualGrossSalary: 0,
+  aprilArrears: 0,
+  octoberArrears: 0,
+  totalGrossIncome: 0,
+
   taxOld: {
     taxableIncome: 0,
     deductionsTotal: 0,
@@ -60,7 +65,8 @@ const state = {
     baseTax: 0,
     rebate: 0,
     cess: 0,
-    totalTax: 0
+    totalTax: 0,
+    netLiability: 0
   },
   taxNew: {
     taxableIncome: 0,
@@ -68,22 +74,48 @@ const state = {
     baseTax: 0,
     rebate: 0,
     cess: 0,
-    totalTax: 0
+    totalTax: 0,
+    netLiability: 0
   }
 };
+
+const MONTHS_ORDER = [
+  "March", "April", "May", "June", "July", "August", 
+  "September", "October", "November", "December", "January", "February"
+];
 
 // ==========================================================================
 // Core Calculation Logic
 // ==========================================================================
 
 /**
+ * Calculates base TA rate before DA.
+ */
+function getBaseTaRate(payLevel, basic, isHigherTpta) {
+  let baseTa = 0;
+  const levelNum = payLevel === "13A" ? 13 : parseInt(payLevel, 10);
+
+  if (levelNum >= 9) {
+    baseTa = isHigherTpta ? 7200 : 3600;
+  } else if (levelNum >= 3) {
+    baseTa = isHigherTpta ? 3600 : 1800;
+  } else {
+    // Levels 1 and 2
+    if (basic >= 24200) {
+      baseTa = isHigherTpta ? 3600 : 1800;
+    } else {
+      baseTa = isHigherTpta ? 1350 : 900;
+    }
+  }
+  return baseTa;
+}
+
+/**
  * Calculates HRA based on city tier, DA percentage, and Official Quarters status.
- * Revise rates when DA crosses 50%:
- * - X: 27% -> 30% (Floor: 5,400)
- * - Y: 18% -> 20% (Floor: 3,600)
- * - Z: 9% -> 10% (Floor: 1,800)
- * 
- * Overridden to 0 if living in official quarters.
+ * Rates:
+ * - X: 30% (Floor: 5,400)
+ * - Y: 20% (Floor: 3,600)
+ * - Z: 10% (Floor: 1,800)
  */
 function calculateHra(basic, daPercent, tier, isQuarters) {
   if (isQuarters) {
@@ -116,27 +148,9 @@ function calculateHra(basic, daPercent, tier, isQuarters) {
 
 /**
  * Calculates Transport Allowance (TA) based on Pay Level, Basic Pay, and Higher TPTA City status.
- * TA = Base TA + DA on TA.
  */
 function calculateTa(payLevel, basic, daPercent, isHigherTpta) {
-  let baseTa = 0;
-
-  // Normalize level representation (e.g. Level "13A" is treated as level 13 for TA scales)
-  const levelNum = payLevel === "13A" ? 13 : parseInt(payLevel, 10);
-
-  if (levelNum >= 9) {
-    baseTa = isHigherTpta ? 7200 : 3600;
-  } else if (levelNum >= 3) {
-    baseTa = isHigherTpta ? 3600 : 1800;
-  } else {
-    // Levels 1 and 2
-    if (basic >= 24200) {
-      baseTa = isHigherTpta ? 3600 : 1800;
-    } else {
-      baseTa = isHigherTpta ? 1350 : 900;
-    }
-  }
-
+  const baseTa = getBaseTaRate(payLevel, basic, isHigherTpta);
   const daOnTa = baseTa * (daPercent / 100);
   return baseTa + daOnTa;
 }
@@ -144,46 +158,42 @@ function calculateTa(payLevel, basic, daPercent, isHigherTpta) {
 /**
  * Calculates HRA Tax Exemption (Sec 10(13A)) under Old Regime.
  * Exemption is the minimum of 3 values:
- * 1. Actual HRA received (3 months for Period 1, 9 months for Period 2).
+ * 1. Actual HRA received.
  * 2. Rent paid minus 10% of (Basic + DA).
  * 3. 50% (Class X) or 40% (Class Y/Z) of (Basic + DA).
  */
-function calculateHraExemption(basicPay, daP1, daP2, hraP1, hraP2, rentPaid, cityTier, isQuarters) {
+function calculateHraExemption(months, rentPaid, cityTier, isQuarters) {
   if (isQuarters || rentPaid <= 0) {
     return 0;
   }
 
-  // Correct 3-month / 9-month annual HRA received
-  const annualHraReceived = (hraP1 * 3) + (hraP2 * 9);
+  const annualHraReceived = months.reduce((sum, m) => sum + m.hra, 0);
   const annualRentPaid = rentPaid * 12;
 
-  // Correct 3-month / 9-month annual Basic + DA
-  const annualBasic = basicPay * 12;
-  const annualDa = (basicPay * (daP1 / 100) * 3) + (basicPay * (daP2 / 100) * 9);
-  const annualBasicPlusDa = annualBasic + annualDa;
+  const annualBasic = months.reduce((sum, m) => sum + m.basic, 0);
+  const annualDa = months.reduce((sum, m) => sum + m.da, 0);
+  const BDA_a = annualBasic + annualDa;
 
-  // Rule 2: Rent paid in excess of 10% of Basic + DA
-  const rentExcess = Math.max(0, annualRentPaid - (0.10 * annualBasicPlusDa));
-
-  // Rule 3: 50% of Basic + DA for Delhi/Mumbai/Kolkata/Chennai (Class X), otherwise 40%
+  const rentExcess = Math.max(0, annualRentPaid - (0.10 * BDA_a));
   const cityPercentage = cityTier === "X" ? 0.50 : 0.40;
-  const limitByCity = annualBasicPlusDa * cityPercentage;
+  const limitByCity = BDA_a * cityPercentage;
 
   return Math.min(annualHraReceived, rentExcess, limitByCity);
 }
 
 /**
- * Calculates Old Tax Regime liability (FY 2025-26 & FY 2026-27).
+ * Calculates Old Tax Regime liability (FY 2025-26).
  */
-function calculateOldRegimeTax(annualGross, exemptHra, exemptCea, exemptLtc, sec80C, sec80D, sec80Nps) {
-  const capped80C = Math.min(sec80C, 150000);
-  const capped80D = Math.min(sec80D, 100000);
-  const cappedNps = Math.min(sec80Nps, 50000);
+function calculateOldRegimeTax(grossIncome, exemptHra, exemptCea, exemptLtc, deduct24b, deduct80E, deductProfTax, deduct80C, deduct80D, deductNps) {
+  const capped24b = Math.min(deduct24b, 200000);
+  const capped80C = Math.min(deduct80C, 150000);
+  const capped80D = Math.min(deduct80D, 25000);
+  const cappedNps = Math.min(deductNps, 50000);
   const standardDeduction = 50000;
 
-  // Total deductions = standard deduction + capped 80 series + Section 10 exemptions
-  const totalDeductions = standardDeduction + capped80C + capped80D + cappedNps + exemptHra + exemptCea + exemptLtc;
-  const taxableIncome = Math.max(0, annualGross - totalDeductions);
+  // Total deductions = standard deduction + capped 24b + 80E + 16iii + capped 80 series + Section 10 exemptions
+  const totalDeductions = standardDeduction + exemptHra + exemptCea + exemptLtc + capped24b + deduct80E + deductProfTax + capped80C + capped80D + cappedNps;
+  const taxableIncome = Math.max(0, grossIncome - totalDeductions);
 
   let baseTax = 0;
   if (taxableIncome > 1000000) {
@@ -221,54 +231,61 @@ function calculateOldRegimeTax(annualGross, exemptHra, exemptCea, exemptLtc, sec
 }
 
 /**
- * Calculates New Tax Regime liability (FY 2025-26 & FY 2026-27).
+ * Calculates New Tax Regime base tax using the Budget 2025-26 slabs.
+ * - Up to 4L: Nil | 4L-8L: 5% | 8L-12L: 10% | 12L-16L: 15% | 16L-20L: 20% | 20L-24L: 25% | Above 24L: 30%
  */
-function calculateNewRegimeTax(annualGross) {
-  const standardDeduction = 75000;
-  const taxableIncome = Math.max(0, annualGross - standardDeduction);
-
-  let baseTax = 0;
-
-  // Slabs:
-  // Up to 4L: Nil | 4L-8L: 5% | 8L-12L: 10% | 12L-16L: 15% | 16L-20L: 20% | 20L-24L: 25% | Above 24L: 30%
-  if (taxableIncome > 2400000) {
-    baseTax += (taxableIncome - 2400000) * 0.30;
-    baseTax += 400000 * 0.25; // 20L to 24L
-    baseTax += 400000 * 0.20; // 16L to 20L
-    baseTax += 400000 * 0.15; // 12L to 16L
-    baseTax += 400000 * 0.10; // 8L to 12L
-    baseTax += 400000 * 0.05; // 4L to 8L
-  } else if (taxableIncome > 2000000) {
-    baseTax += (taxableIncome - 2000000) * 0.25;
-    baseTax += 400000 * 0.20; // 16L to 20L
-    baseTax += 400000 * 0.15; // 12L to 16L
-    baseTax += 400000 * 0.10; // 8L to 12L
-    baseTax += 400000 * 0.05; // 4L to 8L
-  } else if (taxableIncome > 1600000) {
-    baseTax += (taxableIncome - 1600000) * 0.20;
-    baseTax += 400000 * 0.15; // 12L to 16L
-    baseTax += 400000 * 0.10; // 8L to 12L
-    baseTax += 400000 * 0.05; // 4L to 8L
-  } else if (taxableIncome > 1200000) {
-    baseTax += (taxableIncome - 1200000) * 0.15;
-    baseTax += 400000 * 0.10; // 8L to 12L
-    baseTax += 400000 * 0.05; // 4L to 8L
-  } else if (taxableIncome > 800000) {
-    baseTax += (taxableIncome - 800000) * 0.10;
-    baseTax += 400000 * 0.05; // 4L to 8L
-  } else if (taxableIncome > 400000) {
-    baseTax += (taxableIncome - 400000) * 0.05;
+function calculateNewRegimeBaseTax(income) {
+  if (income <= 400000) return 0;
+  let tax = 0;
+  if (income > 2400000) {
+    tax += (income - 2400000) * 0.30;
+    tax += 400000 * 0.25; // 20L to 24L
+    tax += 400000 * 0.20; // 16L to 20L
+    tax += 400000 * 0.15; // 12L to 16L
+    tax += 400000 * 0.10; // 8L to 12L
+    tax += 400000 * 0.05; // 4L to 8L
+  } else if (income > 2000000) {
+    tax += (income - 2000000) * 0.25;
+    tax += 400000 * 0.20; // 16L to 20L
+    tax += 400000 * 0.15; // 12L to 16L
+    tax += 400000 * 0.10; // 8L to 12L
+    tax += 400000 * 0.05; // 4L to 8L
+  } else if (income > 1600000) {
+    tax += (income - 1600000) * 0.20;
+    tax += 400000 * 0.15; // 12L to 16L
+    tax += 400000 * 0.10; // 8L to 12L
+    tax += 400000 * 0.05; // 4L to 8L
+  } else if (income > 1200000) {
+    tax += (income - 1200000) * 0.15;
+    tax += 400000 * 0.10; // 8L to 12L
+    tax += 400000 * 0.05; // 4L to 8L
+  } else if (income > 800000) {
+    tax += (income - 800000) * 0.10;
+    tax += 400000 * 0.05; // 4L to 8L
+  } else if (income > 400000) {
+    tax += (income - 400000) * 0.05;
   }
+  return tax;
+}
+
+/**
+ * Calculates New Tax Regime liability (FY 2025-26).
+ */
+function calculateNewRegimeTax(grossIncome) {
+  const standardDeduction = 75000;
+  const taxableIncome = Math.max(0, grossIncome - standardDeduction);
+
+  const baseTax = calculateNewRegimeBaseTax(taxableIncome);
 
   let finalBaseTax = baseTax;
   let rebate = 0;
 
-  // Rebate & Marginal Relief
+  // Rebate & Marginal Relief Section 87A (Budget 2025-26)
   if (taxableIncome <= 1200000) {
     rebate = baseTax;
     finalBaseTax = 0;
   } else {
-    // Marginal Relief check
+    // Marginal Relief check: tax payable <= excess income over 12L
     const excessIncome = taxableIncome - 1200000;
     if (baseTax > excessIncome) {
       finalBaseTax = excessIncome;
@@ -290,15 +307,32 @@ function calculateNewRegimeTax(annualGross) {
 }
 
 /**
+ * Helper to display values dynamically across months inside a period.
+ * If values are constant, returns single formatted currency, otherwise a range "Min / Max".
+ */
+function formatPeriodValues(monthsInPeriod, key) {
+  const values = monthsInPeriod.map(m => m[key]);
+  const unique = [...new Set(values)];
+  if (unique.length === 1) {
+    return formatCurrency(unique[0]);
+  } else {
+    unique.sort((a, b) => a - b);
+    return unique.map(v => formatCurrency(v)).join(" / ");
+  }
+}
+
+/**
  * Main calculation orchestration. Syncs the UI and state variables.
  */
 function updateCalculations() {
   // 1. Read Inputs from DOM
   state.basicPay = parseFloat(document.getElementById("basic-pay").value) || 0;
-  state.daPercentP1 = parseFloat(document.getElementById("da-percent-p1").value) || 0;
-  state.daPercentP2 = parseFloat(document.getElementById("da-percent-p2").value) || 0;
+  state.incrementAmount = parseFloat(document.getElementById("increment-amount").value) || 0;
+  state.incrementMonth = document.getElementById("increment-month").value;
+  state.ceaReceived = parseFloat(document.getElementById("cea-received").value) || 0;
   state.isQuarters = document.getElementById("quarters-toggle").checked;
   state.isHigherTpta = document.getElementById("tpta-toggle").checked;
+  state.payLevel = document.getElementById("pay-level").value;
 
   const cityTierElements = document.getElementsByName("city-tier");
   for (const el of cityTierElements) {
@@ -308,7 +342,7 @@ function updateCalculations() {
     }
   }
 
-  // Handle quarters HRA visibility and rent inputs
+  // Handle quarters and rent visibility
   const rentInput = document.getElementById("rent-paid");
   const rentGroup = document.getElementById("rent-input-group");
   const cityTierGroup = document.getElementById("city-tier-group");
@@ -317,63 +351,96 @@ function updateCalculations() {
     rentInput.disabled = true;
     rentInput.value = 0;
     state.rentPaid = 0;
-    rentGroup.style.opacity = "0.5";
-    cityTierGroup.style.opacity = "0.5";
+    if (rentGroup) rentGroup.style.opacity = "0.5";
+    if (cityTierGroup) cityTierGroup.style.opacity = "0.5";
   } else {
     rentInput.disabled = false;
     state.rentPaid = parseFloat(rentInput.value) || 0;
-    rentGroup.style.opacity = "1";
-    cityTierGroup.style.opacity = "1";
+    if (rentGroup) rentGroup.style.opacity = "1";
+    if (cityTierGroup) cityTierGroup.style.opacity = "1";
   }
 
   state.ceaChildren = parseInt(document.getElementById("cea-children").value, 10) || 0;
   state.exemptionLtc = parseFloat(document.getElementById("exemption-ltc").value) || 0;
-  
+  state.deduct24b = parseFloat(document.getElementById("deduct-24b").value) || 0;
+  state.deduct80E = parseFloat(document.getElementById("deduct-80e").value) || 0;
+  state.deductProfTax = parseFloat(document.getElementById("deduct-prof-tax").value) || 0;
   state.deduct80C = parseFloat(document.getElementById("deduct-80c").value) || 0;
   state.deduct80D = parseFloat(document.getElementById("deduct-80d").value) || 0;
   state.deductNps = parseFloat(document.getElementById("deduct-nps").value) || 0;
+  state.tdsPaid = parseFloat(document.getElementById("tds-paid").value) || 0;
 
-  // 2. Perform Salary splits
-  // Period 1 (Apr - Jun: 3 months)
-  const daP1Val = state.basicPay * (state.daPercentP1 / 100);
-  const hraP1Val = calculateHra(state.basicPay, state.daPercentP1, state.cityTier, state.isQuarters);
-  const taP1Val = calculateTa(state.payLevel, state.basicPay, state.daPercentP1, state.isHigherTpta);
+  // 2. Perform 12-Month Simulation (March to February cycle)
+  state.months = [];
+  const incIndex = MONTHS_ORDER.indexOf(state.incrementMonth);
 
-  state.breakdownP1.basic = state.basicPay;
-  state.breakdownP1.da = daP1Val;
-  state.breakdownP1.hra = hraP1Val;
-  state.breakdownP1.ta = taP1Val;
-  state.monthlyGrossP1 = state.basicPay + daP1Val + hraP1Val + taP1Val;
+  for (let m = 0; m < 12; m++) {
+    const monthName = MONTHS_ORDER[m];
+    
+    // A. Monthly Basic
+    let basic = state.basicPay;
+    if (m >= incIndex) {
+      basic += state.incrementAmount;
+    }
 
-  // Period 2 (Jul - Mar: 9 months)
-  const daP2Val = state.basicPay * (state.daPercentP2 / 100);
-  const hraP2Val = calculateHra(state.basicPay, state.daPercentP2, state.cityTier, state.isQuarters);
-  const taP2Val = calculateTa(state.payLevel, state.basicPay, state.daPercentP2, state.isHigherTpta);
+    // B. 3-Period DA (Locked to March Base Pay)
+    let daPercent = 53;
+    if (m >= 1 && m <= 6) {
+      daPercent = 55; // April - September
+    } else if (m >= 7 && m <= 11) {
+      daPercent = 58; // October - February
+    }
+    const da = state.basicPay * (daPercent / 100);
 
-  state.breakdownP2.basic = state.basicPay;
-  state.breakdownP2.da = daP2Val;
-  state.breakdownP2.hra = hraP2Val;
-  state.breakdownP2.ta = taP2Val;
-  state.monthlyGrossP2 = state.basicPay + daP2Val + hraP2Val + taP2Val;
+    // C. HRA
+    const hra = calculateHra(basic, daPercent, state.cityTier, state.isQuarters);
 
-  // Correct 3-month / 9-month Annual Gross Formula
-  state.annualGross = (state.monthlyGrossP1 * 3) + (state.monthlyGrossP2 * 9);
+    // D. TA
+    const ta = calculateTa(state.payLevel, basic, daPercent, state.isHigherTpta);
 
-  // 3. Perform Tax logic
-  // Exemptions (Old Regime)
-  const exemptHra = calculateHraExemption(
-    state.basicPay, 
-    state.daPercentP1, state.daPercentP2, 
-    hraP1Val, hraP2Val, 
-    state.rentPaid, 
-    state.cityTier, 
-    state.isQuarters
-  );
-  const exemptCea = state.ceaChildren * 1200; // ₹1,200 per child (max 2 children)
+    // E. Monthly Gross
+    const gross = basic + da + hra + ta;
+
+    state.months.push({
+      month: monthName,
+      basic,
+      daPercent,
+      da,
+      hra,
+      ta,
+      gross
+    });
+  }
+
+  // 3. Arrears & Total Gross Salary
+  const marchBaseTa = getBaseTaRate(state.payLevel, state.basicPay, state.isHigherTpta);
+  state.aprilArrears = 3 * ((state.basicPay * 0.02) + (marchBaseTa * 0.02));
+  state.octoberArrears = 3 * ((state.basicPay * 0.03) + (marchBaseTa * 0.03));
+
+  state.annualGrossSalary = state.months.reduce((sum, m) => sum + m.gross, 0);
+  state.totalGrossIncome = state.annualGrossSalary + state.aprilArrears + state.octoberArrears + state.ceaReceived;
+
+  // 4. Tax logic (Old vs New Regime)
+  const exemptHra = calculateHraExemption(state.months, state.rentPaid, state.cityTier, state.isQuarters);
+  const exemptCea = state.ceaChildren * 1200; // max ₹2400
   const exemptLtc = state.exemptionLtc;
 
-  state.taxOld = calculateOldRegimeTax(state.annualGross, exemptHra, exemptCea, exemptLtc, state.deduct80C, state.deduct80D, state.deductNps);
-  state.taxNew = calculateNewRegimeTax(state.annualGross);
+  const oldTaxObj = calculateOldRegimeTax(
+    state.totalGrossIncome,
+    exemptHra, exemptCea, exemptLtc,
+    state.deduct24b, state.deduct80E, state.deductProfTax,
+    state.deduct80C, state.deduct80D, state.deductNps
+  );
+  state.taxOld = {
+    ...oldTaxObj,
+    netLiability: oldTaxObj.totalTax - state.tdsPaid
+  };
+
+  const newTaxObj = calculateNewRegimeTax(state.totalGrossIncome);
+  state.taxNew = {
+    ...newTaxObj,
+    netLiability: newTaxObj.totalTax - state.tdsPaid
+  };
 
   // Render to UI
   renderOutputs();
@@ -389,23 +456,37 @@ function formatCurrency(num) {
 }
 
 function renderOutputs() {
+  const p1Months = [state.months[0]];
+  const p2Months = state.months.slice(1, 7);
+  const p3Months = state.months.slice(7, 12);
+
   // Render Salary tab values
-  document.getElementById("monthly-gross-p1").innerText = formatCurrency(state.monthlyGrossP1);
-  document.getElementById("monthly-gross-p2").innerText = formatCurrency(state.monthlyGrossP2);
-  document.getElementById("annual-gross").innerText = formatCurrency(state.annualGross);
+  document.getElementById("monthly-gross-p1").innerText = formatPeriodValues(p1Months, "gross");
+  document.getElementById("monthly-gross-p2").innerText = formatPeriodValues(p2Months, "gross");
+  document.getElementById("monthly-gross-p3").innerText = formatPeriodValues(p3Months, "gross");
+  document.getElementById("arrears-total-display").innerText = formatCurrency(state.aprilArrears + state.octoberArrears);
+  document.getElementById("annual-gross").innerText = formatCurrency(state.totalGrossIncome);
 
   // Period comparisons table
-  document.getElementById("breakdown-basic-p1").innerText = formatCurrency(state.breakdownP1.basic);
-  document.getElementById("breakdown-basic-p2").innerText = formatCurrency(state.breakdownP2.basic);
+  document.getElementById("breakdown-basic-p1").innerText = formatPeriodValues(p1Months, "basic");
+  document.getElementById("breakdown-basic-p2").innerText = formatPeriodValues(p2Months, "basic");
+  document.getElementById("breakdown-basic-p3").innerText = formatPeriodValues(p3Months, "basic");
   
-  document.getElementById("breakdown-da-p1").innerText = `${formatCurrency(state.breakdownP1.da)} (${state.daPercentP1}%)`;
-  document.getElementById("breakdown-da-p2").innerText = `${formatCurrency(state.breakdownP2.da)} (${state.daPercentP2}%)`;
+  document.getElementById("breakdown-da-p1").innerText = `${formatPeriodValues(p1Months, "da")} (53%)`;
+  document.getElementById("breakdown-da-p2").innerText = `${formatPeriodValues(p2Months, "da")} (55%)`;
+  document.getElementById("breakdown-da-p3").innerText = `${formatPeriodValues(p3Months, "da")} (58%)`;
 
-  document.getElementById("breakdown-hra-p1").innerText = state.isQuarters ? "₹0 (Qtrs)" : formatCurrency(state.breakdownP1.hra);
-  document.getElementById("breakdown-hra-p2").innerText = state.isQuarters ? "₹0 (Qtrs)" : formatCurrency(state.breakdownP2.hra);
+  document.getElementById("breakdown-hra-p1").innerText = state.isQuarters ? "₹0 (Qtrs)" : formatPeriodValues(p1Months, "hra");
+  document.getElementById("breakdown-hra-p2").innerText = state.isQuarters ? "₹0 (Qtrs)" : formatPeriodValues(p2Months, "hra");
+  document.getElementById("breakdown-hra-p3").innerText = state.isQuarters ? "₹0 (Qtrs)" : formatPeriodValues(p3Months, "hra");
 
-  document.getElementById("breakdown-ta-p1").innerText = formatCurrency(state.breakdownP1.ta);
-  document.getElementById("breakdown-ta-p2").innerText = formatCurrency(state.breakdownP2.ta);
+  document.getElementById("breakdown-ta-p1").innerText = formatPeriodValues(p1Months, "ta");
+  document.getElementById("breakdown-ta-p2").innerText = formatPeriodValues(p2Months, "ta");
+  document.getElementById("breakdown-ta-p3").innerText = formatPeriodValues(p3Months, "ta");
+
+  // Arrears text breakdown
+  document.getElementById("arrears-p1-text").innerText = `April Arrears: ${formatCurrency(state.aprilArrears)}`;
+  document.getElementById("arrears-p2-text").innerText = `October Arrears: ${formatCurrency(state.octoberArrears)}`;
 
   // HRA Notice handling
   const hraNoticeEl = document.getElementById("hra-notice");
@@ -414,28 +495,57 @@ function renderOutputs() {
   if (state.isQuarters) {
     hraNoticeEl.style.display = "flex";
     hraNoticeText.innerText = "Staying in Official Quarters. HRA is set to ₹0.";
-  } else if (state.daPercentP1 > 50 || state.daPercentP2 > 50) {
-    hraNoticeEl.style.display = "flex";
-    hraNoticeText.innerText = "HRA rates are automatically upgraded to 30%/20%/10% for periods where DA crosses 50%.";
   } else {
-    hraNoticeEl.style.display = "none";
+    hraNoticeEl.style.display = "flex";
+    hraNoticeText.innerText = "HRA rates are automatically upgraded to 30%/20%/10% since DA is > 50% in all periods of FY 2025-26.";
   }
 
   // Sync Gross Salary to Tax tab
-  document.getElementById("tax-gross-display").innerText = formatCurrency(state.annualGross);
+  document.getElementById("tax-gross-display").innerText = formatCurrency(state.totalGrossIncome);
 
   // Render Tax tab comparison values
   document.getElementById("old-taxable").innerText = formatCurrency(state.taxOld.taxableIncome);
-  document.getElementById("old-base-tax").innerText = formatCurrency(state.taxOld.baseTax);
-  document.getElementById("old-cess").innerText = formatCurrency(state.taxOld.cess);
   document.getElementById("old-total-tax").innerText = formatCurrency(state.taxOld.totalTax);
 
   document.getElementById("new-taxable").innerText = formatCurrency(state.taxNew.taxableIncome);
-  document.getElementById("new-base-tax").innerText = formatCurrency(state.taxNew.baseTax);
-  document.getElementById("new-cess").innerText = formatCurrency(state.taxNew.cess);
   document.getElementById("new-total-tax").innerText = formatCurrency(state.taxNew.totalTax);
 
-  // Set highlight/active status on tax regime column
+  // Dynamic status styling on Due / Refund in comparison cards
+  const oldRefundDueValEl = document.getElementById("old-refund-due-val");
+  const oldRefundDueLabelEl = document.getElementById("old-refund-due-label");
+  const oldRefundDueStatEl = document.getElementById("old-refund-due-stat");
+
+  const oldNet = state.taxOld.netLiability;
+  oldRefundDueValEl.innerText = formatCurrency(Math.abs(oldNet));
+  if (oldNet > 0) {
+    oldRefundDueLabelEl.innerText = "Tax Due";
+    oldRefundDueStatEl.className = "regime-stat highlight-stat status-due";
+  } else if (oldNet < 0) {
+    oldRefundDueLabelEl.innerText = "Refund";
+    oldRefundDueStatEl.className = "regime-stat highlight-stat status-refund";
+  } else {
+    oldRefundDueLabelEl.innerText = "Net Due/Refund";
+    oldRefundDueStatEl.className = "regime-stat highlight-stat";
+  }
+
+  const newRefundDueValEl = document.getElementById("new-refund-due-val");
+  const newRefundDueLabelEl = document.getElementById("new-refund-due-label");
+  const newRefundDueStatEl = document.getElementById("new-refund-due-stat");
+
+  const newNet = state.taxNew.netLiability;
+  newRefundDueValEl.innerText = formatCurrency(Math.abs(newNet));
+  if (newNet > 0) {
+    newRefundDueLabelEl.innerText = "Tax Due";
+    newRefundDueStatEl.className = "regime-stat highlight-stat status-due";
+  } else if (newNet < 0) {
+    newRefundDueLabelEl.innerText = "Refund";
+    newRefundDueStatEl.className = "regime-stat highlight-stat status-refund";
+  } else {
+    newRefundDueLabelEl.innerText = "Net Due/Refund";
+    newRefundDueStatEl.className = "regime-stat highlight-stat";
+  }
+
+  // Set active class on better tax regime box and update banner advice
   const oldBox = document.getElementById("old-regime-box");
   const newBox = document.getElementById("new-regime-box");
   const banner = document.getElementById("savings-banner");
@@ -446,12 +556,12 @@ function renderOutputs() {
     oldBox.classList.add("active");
     newBox.classList.remove("active");
     banner.className = "savings-banner alert-success";
-    banner.innerText = `Old Tax Regime is better! You save ${formatCurrency(diff)} annually.`;
+    banner.innerText = `Old Regime is Beneficial! You save ${formatCurrency(diff)} annually.`;
   } else if (state.taxNew.totalTax < state.taxOld.totalTax) {
     newBox.classList.add("active");
     oldBox.classList.remove("active");
     banner.className = "savings-banner alert-success";
-    banner.innerText = `New Tax Regime is better! You save ${formatCurrency(diff)} annually.`;
+    banner.innerText = `New Regime is Beneficial! You save ${formatCurrency(diff)} annually.`;
   } else {
     oldBox.classList.remove("active");
     newBox.classList.remove("active");
@@ -477,33 +587,45 @@ function renderOutputs() {
   }
 
   // 4. Render Summary tab values
-  // Salary Breakdown Table
-  document.getElementById("sum-basic-p1").innerText = formatCurrency(state.breakdownP1.basic);
-  document.getElementById("sum-basic-p2").innerText = formatCurrency(state.breakdownP2.basic);
+  // Salary Table
+  document.getElementById("sum-basic-p1").innerText = formatPeriodValues(p1Months, "basic");
+  document.getElementById("sum-basic-p2").innerText = formatPeriodValues(p2Months, "basic");
+  document.getElementById("sum-basic-p3").innerText = formatPeriodValues(p3Months, "basic");
   
-  document.getElementById("sum-da-p1").innerText = `${formatCurrency(state.breakdownP1.da)} (${state.daPercentP1}%)`;
-  document.getElementById("sum-da-p2").innerText = `${formatCurrency(state.breakdownP2.da)} (${state.daPercentP2}%)`;
+  document.getElementById("sum-da-p1").innerText = `${formatPeriodValues(p1Months, "da")} (53%)`;
+  document.getElementById("sum-da-p2").innerText = `${formatPeriodValues(p2Months, "da")} (55%)`;
+  document.getElementById("sum-da-p3").innerText = `${formatPeriodValues(p3Months, "da")} (58%)`;
 
-  document.getElementById("sum-hra-p1").innerText = state.isQuarters ? "₹0 (Qtrs)" : formatCurrency(state.breakdownP1.hra);
-  document.getElementById("sum-hra-p2").innerText = state.isQuarters ? "₹0 (Qtrs)" : formatCurrency(state.breakdownP2.hra);
+  document.getElementById("sum-hra-p1").innerText = state.isQuarters ? "₹0 (Qtrs)" : formatPeriodValues(p1Months, "hra");
+  document.getElementById("sum-hra-p2").innerText = state.isQuarters ? "₹0 (Qtrs)" : formatPeriodValues(p2Months, "hra");
+  document.getElementById("sum-hra-p3").innerText = state.isQuarters ? "₹0 (Qtrs)" : formatPeriodValues(p3Months, "hra");
 
-  document.getElementById("sum-ta-p1").innerText = formatCurrency(state.breakdownP1.ta);
-  document.getElementById("sum-ta-p2").innerText = formatCurrency(state.breakdownP2.ta);
+  document.getElementById("sum-ta-p1").innerText = formatPeriodValues(p1Months, "ta");
+  document.getElementById("sum-ta-p2").innerText = formatPeriodValues(p2Months, "ta");
+  document.getElementById("sum-ta-p3").innerText = formatPeriodValues(p3Months, "ta");
 
-  document.getElementById("sum-monthly-gross-p1").innerText = formatCurrency(state.monthlyGrossP1);
-  document.getElementById("sum-monthly-gross-p2").innerText = formatCurrency(state.monthlyGrossP2);
-  document.getElementById("sum-annual-gross").innerText = formatCurrency(state.annualGross);
+  document.getElementById("sum-monthly-gross-p1").innerText = formatPeriodValues(p1Months, "gross");
+  document.getElementById("sum-monthly-gross-p2").innerText = formatPeriodValues(p2Months, "gross");
+  document.getElementById("sum-monthly-gross-p3").innerText = formatPeriodValues(p3Months, "gross");
+  
+  document.getElementById("sum-arr-apr").innerText = formatCurrency(state.aprilArrears);
+  document.getElementById("sum-arr-oct").innerText = formatCurrency(state.octoberArrears);
+  document.getElementById("sum-cea-rec").innerText = formatCurrency(state.ceaReceived);
+  document.getElementById("sum-annual-gross").innerText = formatCurrency(state.totalGrossIncome);
 
   // Tax Table details
-  document.getElementById("sum-tax-gross-old").innerText = formatCurrency(state.annualGross);
-  document.getElementById("sum-tax-gross-new").innerText = formatCurrency(state.annualGross);
+  document.getElementById("sum-tax-gross-old").innerText = formatCurrency(state.totalGrossIncome);
+  document.getElementById("sum-tax-gross-new").innerText = formatCurrency(state.totalGrossIncome);
   
   document.getElementById("sum-ex-hra").innerText = "- " + formatCurrency(state.taxOld.exemptHra);
   document.getElementById("sum-ex-cea").innerText = "- " + formatCurrency(state.taxOld.exemptCea);
   document.getElementById("sum-ex-ltc").innerText = "- " + formatCurrency(state.taxOld.exemptLtc);
+  document.getElementById("sum-ex-24b").innerText = "- " + formatCurrency(Math.min(state.deduct24b, 200000));
+  document.getElementById("sum-ex-80e").innerText = "- " + formatCurrency(state.deduct80E);
+  document.getElementById("sum-ex-prof").innerText = "- " + formatCurrency(state.deductProfTax);
 
   document.getElementById("sum-80c").innerText = "- " + formatCurrency(Math.min(state.deduct80C, 150000));
-  document.getElementById("sum-80d").innerText = "- " + formatCurrency(Math.min(state.deduct80D, 100000));
+  document.getElementById("sum-80d").innerText = "- " + formatCurrency(Math.min(state.deduct80D, 25000));
   document.getElementById("sum-nps").innerText = "- " + formatCurrency(Math.min(state.deductNps, 50000));
 
   document.getElementById("sum-taxable-old").innerText = formatCurrency(state.taxOld.taxableIncome);
@@ -518,15 +640,43 @@ function renderOutputs() {
   
   document.getElementById("sum-totaltax-old").innerText = formatCurrency(state.taxOld.totalTax);
   document.getElementById("sum-totaltax-new").innerText = formatCurrency(state.taxNew.totalTax);
+  
+  document.getElementById("sum-tds-old").innerText = "- " + formatCurrency(state.tdsPaid);
+  document.getElementById("sum-tds-new").innerText = "- " + formatCurrency(state.tdsPaid);
+
+  // Net Payable / Refund styling in summary table
+  const sumNetOldEl = document.getElementById("sum-net-old");
+  if (oldNet > 0) {
+    sumNetOldEl.innerText = `${formatCurrency(oldNet)} (Tax Due)`;
+    sumNetOldEl.className = "text-right text-bold status-due";
+  } else if (oldNet < 0) {
+    sumNetOldEl.innerText = `${formatCurrency(Math.abs(oldNet))} (Refund)`;
+    sumNetOldEl.className = "text-right text-bold status-refund";
+  } else {
+    sumNetOldEl.innerText = formatCurrency(0);
+    sumNetOldEl.className = "text-right text-bold";
+  }
+
+  const sumNetNewEl = document.getElementById("sum-net-new");
+  if (newNet > 0) {
+    sumNetNewEl.innerText = `${formatCurrency(newNet)} (Tax Due)`;
+    sumNetNewEl.className = "text-right text-bold status-due";
+  } else if (newNet < 0) {
+    sumNetNewEl.innerText = `${formatCurrency(Math.abs(newNet))} (Refund)`;
+    sumNetNewEl.className = "text-right text-bold status-refund";
+  } else {
+    sumNetNewEl.innerText = formatCurrency(0);
+    sumNetNewEl.className = "text-right text-bold";
+  }
 
   // Set recommendation card text in Summary tab
   const recBadge = document.getElementById("sum-recommendation");
   if (state.taxOld.totalTax < state.taxNew.totalTax) {
     recBadge.className = "recommendation-badge alert-success";
-    recBadge.innerText = `RECOMMENDATION: Opt for the OLD Tax Regime. It saves you ${formatCurrency(diff)} in tax liability this year.`;
+    recBadge.innerText = `RECOMMENDATION: Old Regime is Beneficial. It saves you ${formatCurrency(diff)} in tax liability this year.`;
   } else if (state.taxNew.totalTax < state.taxOld.totalTax) {
     recBadge.className = "recommendation-badge alert-success";
-    recBadge.innerText = `RECOMMENDATION: Opt for the NEW Tax Regime (Default). It saves you ${formatCurrency(diff)} in tax liability this year.`;
+    recBadge.innerText = `RECOMMENDATION: New Regime is Beneficial. It saves you ${formatCurrency(diff)} in tax liability this year.`;
   } else {
     recBadge.className = "recommendation-badge alert-info";
     recBadge.innerText = "RECOMMENDATION: You can choose either regime as the tax liabilities are identical. (New Regime is default).";
@@ -629,57 +779,87 @@ function setupExportActions() {
     
     let advice = "Either regime yields identical liability.";
     if (isNewBetter) {
-      advice = `Opt for the NEW Tax Regime. Savings: ${formatCurrency(state.taxOld.totalTax - state.taxNew.totalTax)}/yr.`;
+      advice = `New Regime is Beneficial! You save ${formatCurrency(state.taxOld.totalTax - state.taxNew.totalTax)}/yr.`;
     } else if (isOldBetter) {
-      advice = `Opt for the OLD Tax Regime. Savings: ${formatCurrency(state.taxNew.totalTax - state.taxOld.totalTax)}/yr.`;
+      advice = `Old Regime is Beneficial! You save ${formatCurrency(state.taxNew.totalTax - state.taxOld.totalTax)}/yr.`;
     }
+
+    const p1Months = [state.months[0]];
+    const p2Months = state.months.slice(1, 7);
+    const p3Months = state.months.slice(7, 12);
 
     const summaryText = `----------------------------------------
 7TH CPC SALARY & INCOME TAX SUMMARY ASSESSMENT
 ----------------------------------------
-FINANCIAL YEAR: FY 2025-26 & FY 2026-27
+FINANCIAL YEAR: FY 2025-26
+ASSESSMENT YEAR: AY 2026-27
 
-SALARY DETAILS:
-- Basic Pay (Monthly): ${formatCurrency(state.basicPay)}
-- Official Quarters: ${state.isQuarters ? "Yes (HRA = ₹0)" : "No"}
-- HRA City Class: ${state.cityTier}
-- Higher TPTA City: ${state.isHigherTpta ? "Yes" : "No"}
+SALARY PARAMETERS:
+- Pay Level (7th CPC): Level ${state.payLevel}
+- March Base Basic Pay: ${formatCurrency(state.basicPay)}
+- Increment Amount: ${formatCurrency(state.incrementAmount)}
+- Increment Month: ${state.incrementMonth}
+- Staying in Official Quarters: ${state.isQuarters ? "Yes" : "No"}
+- HRA City Classification: Class ${state.cityTier}
+- Higher TPTA City (Category A): ${state.isHigherTpta ? "Yes" : "No"}
+- Children Education Allowance Received: ${formatCurrency(state.ceaReceived)}
 
-PERIOD BREAKDOWNS (3m / 9m SPLITS):
-* Period 1 (Apr - Jun: 3 months) | DA: ${state.daPercentP1}%
-  - Monthly DA: ${formatCurrency(state.breakdownP1.da)}
-  - Monthly HRA: ${formatCurrency(state.breakdownP1.hra)}
-  - Monthly TA: ${formatCurrency(state.breakdownP1.ta)}
-  - Monthly Gross: ${formatCurrency(state.monthlyGrossP1)}
+PERIOD BREAKDOWNS (12-MONTH SIMULATION):
+* Period 1 (March - 1 month) | DA: 53%
+  - Monthly Basic: ${formatPeriodValues(p1Months, "basic")}
+  - Monthly DA: ${formatPeriodValues(p1Months, "da")}
+  - Monthly HRA: ${state.isQuarters ? "₹0 (Qtrs)" : formatPeriodValues(p1Months, "hra")}
+  - Monthly TA: ${formatPeriodValues(p1Months, "ta")}
+  - Monthly Gross: ${formatPeriodValues(p1Months, "gross")}
 
-* Period 2 (Jul - Mar: 9 months) | DA: ${state.daPercentP2}%
-  - Monthly DA: ${formatCurrency(state.breakdownP2.da)}
-  - Monthly HRA: ${formatCurrency(state.breakdownP2.hra)}
-  - Monthly TA: ${formatCurrency(state.breakdownP2.ta)}
-  - Monthly Gross: ${formatCurrency(state.monthlyGrossP2)}
+* Period 2 (Apr - Sep - 6 months) | DA: 55%
+  - Monthly Basic: ${formatPeriodValues(p2Months, "basic")}
+  - Monthly DA: ${formatPeriodValues(p2Months, "da")}
+  - Monthly HRA: ${state.isQuarters ? "₹0 (Qtrs)" : formatPeriodValues(p2Months, "hra")}
+  - Monthly TA: ${formatPeriodValues(p2Months, "ta")}
+  - Monthly Gross: ${formatPeriodValues(p2Months, "gross")}
 
-- Total Computed Annual Gross Salary: ${formatCurrency(state.annualGross)}
+* Period 3 (Oct - Feb - 5 months) | DA: 58%
+  - Monthly Basic: ${formatPeriodValues(p3Months, "basic")}
+  - Monthly DA: ${formatPeriodValues(p3Months, "da")}
+  - Monthly HRA: ${state.isQuarters ? "₹0 (Qtrs)" : formatPeriodValues(p3Months, "hra")}
+  - Monthly TA: ${formatPeriodValues(p3Months, "ta")}
+  - Monthly Gross: ${formatPeriodValues(p3Months, "gross")}
 
-DEDUCTIONS & EXEMPTIONS UNDER OLD REGIME:
-- Standard Deduction: ₹50,000
-- Section 10(13A) HRA Exemption: ${formatCurrency(state.taxOld.exemptHra)} (Rent Paid: ${formatCurrency(state.rentPaid)}/mo)
-- Section 10(14) CEA Exemption: ${formatCurrency(state.taxOld.exemptCea)} (${state.ceaChildren} Children)
-- Section 10(5) LTC Exemption: ${formatCurrency(state.taxOld.exemptLtc)}
-- Section 80C Deductions: ${formatCurrency(Math.min(state.deduct80C, 150000))}
-- Section 80D Medical Insurance: ${formatCurrency(Math.min(state.deduct80D, 100000))}
-- NPS Sec 80CCD(1B) Contribution: ${formatCurrency(Math.min(state.deductNps, 50000))}
-- Total Deductions & Exemptions: ${formatCurrency(state.taxOld.deductionsTotal)}
+ARREARS & ALLOWANCES:
+- April Arrears (3 months): ${formatCurrency(state.aprilArrears)}
+- October Arrears (3 months): ${formatCurrency(state.octoberArrears)}
+- Children Education Allowance (CEA) Received: ${formatCurrency(state.ceaReceived)}
 
-TAX ASSESSMENT COMPARISON:
-1. OLD REGIME:
+ANNUAL SUMS:
+- Annual Gross Salary (Computed): ${formatCurrency(state.annualGrossSalary)}
+- Total Gross Income: ${formatCurrency(state.totalGrossIncome)}
+
+TAX ASSESSMENT:
+1. OLD TAX REGIME:
    - Taxable Income: ${formatCurrency(state.taxOld.taxableIncome)}
-   - Total Tax Due (incl. Cess): ${formatCurrency(state.taxOld.totalTax)}
+   - Section 10(13A) HRA Exemption: ${formatCurrency(state.taxOld.exemptHra)} (Rent Paid: ${formatCurrency(state.rentPaid)}/mo)
+   - Section 10(14) CEA Exemption: ${formatCurrency(state.taxOld.exemptCea)}
+   - Section 10(5) LTC Exemption: ${formatCurrency(state.taxOld.exemptLtc)}
+   - Section 24(b) Housing Loan Interest: ${formatCurrency(Math.min(state.deduct24b, 200000))}
+   - Section 80E Education Loan Interest: ${formatCurrency(state.deduct80E)}
+   - Section 16(iii) Professional Tax: ${formatCurrency(state.deductProfTax)}
+   - Section 80C Deductions: ${formatCurrency(Math.min(state.deduct80C, 150000))}
+   - Section 80D Medical Insurance: ${formatCurrency(Math.min(state.deduct80D, 25000))}
+   - NPS Sec 80CCD(1B) Contribution: ${formatCurrency(Math.min(state.deductNps, 50000))}
+   - Total Deductions & Exemptions: ${formatCurrency(state.taxOld.deductionsTotal)}
+   - Total Tax (incl. Cess): ${formatCurrency(state.taxOld.totalTax)}
+   - TDS Paid: ${formatCurrency(state.tdsPaid)}
+   - Net Payable/Refund: ${state.taxOld.netLiability > 0 ? "Tax Due: " : "Refund: "}${formatCurrency(Math.abs(state.taxOld.netLiability))}
 
-2. NEW REGIME (DEFAULT):
+2. NEW TAX REGIME (DEFAULT):
    - Taxable Income: ${formatCurrency(state.taxNew.taxableIncome)}
-   - Total Tax Due (incl. Cess): ${formatCurrency(state.taxNew.totalTax)}
+   - Standard Deduction: ${formatCurrency(75000)}
+   - Total Tax (incl. Cess): ${formatCurrency(state.taxNew.totalTax)}
+   - TDS Paid: ${formatCurrency(state.tdsPaid)}
+   - Net Payable/Refund: ${state.taxNew.netLiability > 0 ? "Tax Due: " : "Refund: "}${formatCurrency(Math.abs(state.taxNew.netLiability))}
 
-RECOMMENDATION SUMMARY:
+RECOMMENDATION:
 ${advice}
 ----------------------------------------
 Calculated via Central Government Salary & Tax PWA.
@@ -705,8 +885,9 @@ Calculated via Central Government Salary & Tax PWA.
 document.addEventListener("DOMContentLoaded", () => {
   // Bind inputs and change handlers
   const basicPayInput = document.getElementById("basic-pay");
-  const daPercentP1Input = document.getElementById("da-percent-p1");
-  const daPercentP2Input = document.getElementById("da-percent-p2");
+  const incrementAmountInput = document.getElementById("increment-amount");
+  const incrementMonthSelect = document.getElementById("increment-month");
+  const ceaReceivedInput = document.getElementById("cea-received");
   const quartersToggle = document.getElementById("quarters-toggle");
   const tptaToggle = document.getElementById("tpta-toggle");
   const payLevelSelect = document.getElementById("pay-level");
@@ -716,9 +897,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const ceaChildrenSelect = document.getElementById("cea-children");
   const exemptionLtcInput = document.getElementById("exemption-ltc");
 
+  const deduct24bInput = document.getElementById("deduct-24b");
+  const deduct80EInput = document.getElementById("deduct-80e");
+  const deductProfTaxInput = document.getElementById("deduct-prof-tax");
   const deduct80CInput = document.getElementById("deduct-80c");
   const deduct80DInput = document.getElementById("deduct-80d");
   const deductNpsInput = document.getElementById("deduct-nps");
+  const tdsPaidInput = document.getElementById("tds-paid");
+
+  // Initial state setup from DOM
+  state.payLevel = payLevelSelect.value;
+  const initialMinBasic = PAY_LEVEL_MINIMUMS[state.payLevel];
+  if (initialMinBasic && !basicPayInput.value) {
+    basicPayInput.value = initialMinBasic;
+  }
 
   // Initial Calculation Run
   updateCalculations();
@@ -735,15 +927,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // General Input change listeners
   const liveInputs = [
-    basicPayInput, daPercentP1Input, daPercentP2Input, 
+    basicPayInput, incrementAmountInput, ceaReceivedInput, 
     rentPaidInput, exemptionLtcInput, 
-    deduct80CInput, deduct80DInput, deductNpsInput
+    deduct24bInput, deduct80EInput, deductProfTaxInput,
+    deduct80CInput, deduct80DInput, deductNpsInput, tdsPaidInput
   ];
   
   liveInputs.forEach(input => {
-    input.addEventListener("input", updateCalculations);
+    if (input) {
+      input.addEventListener("input", updateCalculations);
+    }
   });
 
+  incrementMonthSelect.addEventListener("change", updateCalculations);
   quartersToggle.addEventListener("change", updateCalculations);
   tptaToggle.addEventListener("change", updateCalculations);
   ceaChildrenSelect.addEventListener("change", updateCalculations);
