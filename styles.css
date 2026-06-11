@@ -1,0 +1,1131 @@
+/* ==========================================================================
+   CSS Reset & Base Settings
+   ========================================================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* HSL Color System - Light Mode (Default) */
+  --md-primary-h: 262;
+  --md-primary-s: 52%;
+  --md-primary-l: 47%;
+  
+  --md-sys-color-primary: hsl(var(--md-primary-h), var(--md-primary-s), var(--md-primary-l));
+  --md-sys-color-on-primary: hsl(0, 0%, 100%);
+  --md-sys-color-primary-container: hsl(var(--md-primary-h), 90%, 90%);
+  --md-sys-color-on-primary-container: hsl(var(--md-primary-h), 95%, 15%);
+  
+  --md-secondary-h: 281;
+  --md-secondary-s: 23%;
+  --md-secondary-l: 47%;
+  
+  --md-sys-color-secondary: hsl(var(--md-secondary-h), var(--md-secondary-s), var(--md-secondary-l));
+  --md-sys-color-on-secondary: hsl(0, 0%, 100%);
+  --md-sys-color-secondary-container: hsl(var(--md-secondary-h), 80%, 92%);
+  --md-sys-color-on-secondary-container: hsl(var(--md-secondary-h), 85%, 15%);
+  
+  --md-sys-color-background: hsl(260, 30%, 98%);
+  --md-sys-color-on-background: hsl(260, 20%, 10%);
+  
+  --md-sys-color-surface: hsl(260, 30%, 98%);
+  --md-sys-color-on-surface: hsl(260, 20%, 10%);
+  --md-sys-color-surface-variant: hsl(262, 15%, 92%);
+  --md-sys-color-on-surface-variant: hsl(262, 10%, 25%);
+  --md-sys-color-outline: hsl(262, 10%, 55%);
+  --md-sys-color-outline-variant: hsl(262, 15%, 85%);
+  
+  /* Alert/State Colors - Light Mode */
+  --md-sys-color-success: hsl(142, 60%, 33%);
+  --md-sys-color-success-container: hsl(142, 70%, 90%);
+  --md-sys-color-on-success-container: hsl(142, 80%, 10%);
+  
+  --md-sys-color-warning: hsl(35, 75%, 35%);
+  --md-sys-color-warning-container: hsl(35, 85%, 91%);
+  --md-sys-color-on-warning-container: hsl(35, 90%, 10%);
+  
+  --md-sys-color-error: hsl(0, 65%, 40%);
+  --md-sys-color-error-container: hsl(0, 75%, 91%);
+  --md-sys-color-on-error-container: hsl(0, 80%, 10%);
+
+  --md-sys-color-info: hsl(200, 70%, 35%);
+  --md-sys-color-info-container: hsl(200, 75%, 91%);
+  --md-sys-color-on-info-container: hsl(200, 80%, 10%);
+  
+  /* Layout Constants */
+  --header-height: 64px;
+  --bottom-nav-height: 80px;
+  --transition-speed: 0.3s;
+  --elevation-1: 0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
+  --elevation-2: 0px 2px 6px 2px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
+  --elevation-3: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px 0px rgba(0, 0, 0, 0.30);
+}
+
+/* ==========================================================================
+   Dark Mode Override
+   ========================================================================== */
+body.dark-mode {
+  --md-sys-color-primary: hsl(var(--md-primary-h), 85%, 75%);
+  --md-sys-color-on-primary: hsl(var(--md-primary-h), 95%, 15%);
+  --md-sys-color-primary-container: hsl(var(--md-primary-h), 50%, 25%);
+  --md-sys-color-on-primary-container: hsl(var(--md-primary-h), 90%, 90%);
+  
+  --md-sys-color-secondary: hsl(var(--md-secondary-h), 75%, 80%);
+  --md-sys-color-on-secondary: hsl(var(--md-secondary-h), 85%, 15%);
+  --md-sys-color-secondary-container: hsl(var(--md-secondary-h), 45%, 25%);
+  --md-sys-color-on-secondary-container: hsl(var(--md-secondary-h), 85%, 90%);
+  
+  --md-sys-color-background: hsl(260, 20%, 8%);
+  --md-sys-color-on-background: hsl(260, 10%, 90%);
+  
+  --md-sys-color-surface: hsl(260, 15%, 11%);
+  --md-sys-color-on-surface: hsl(260, 10%, 90%);
+  --md-sys-color-surface-variant: hsl(262, 15%, 20%);
+  --md-sys-color-on-surface-variant: hsl(262, 10%, 80%);
+  --md-sys-color-outline: hsl(262, 10%, 65%);
+  --md-sys-color-outline-variant: hsl(262, 15%, 35%);
+  
+  /* Alert/State Colors - Dark Mode */
+  --md-sys-color-success: hsl(142, 60%, 70%);
+  --md-sys-color-success-container: hsl(142, 50%, 20%);
+  --md-sys-color-on-success-container: hsl(142, 70%, 90%);
+  
+  --md-sys-color-warning: hsl(35, 75%, 70%);
+  --md-sys-color-warning-container: hsl(35, 50%, 20%);
+  --md-sys-color-on-warning-container: hsl(35, 80%, 90%);
+  
+  --md-sys-color-error: hsl(0, 75%, 70%);
+  --md-sys-color-error-container: hsl(0, 50%, 20%);
+  --md-sys-color-on-error-container: hsl(0, 85%, 90%);
+
+  --md-sys-color-info: hsl(200, 75%, 70%);
+  --md-sys-color-info-container: hsl(200, 50%, 20%);
+  --md-sys-color-on-info-container: hsl(200, 80%, 90%);
+}
+
+/* ==========================================================================
+   Global Styles
+   ========================================================================== */
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--md-sys-color-background);
+  color: var(--md-sys-color-on-background);
+  overflow-x: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  color: var(--md-sys-color-on-background);
+}
+
+/* ==========================================================================
+   Top App Bar
+   ========================================================================== */
+.top-app-bar {
+  height: var(--header-height);
+  background-color: var(--md-sys-color-surface);
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  display: flex;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 0 16px;
+  transition: background-color var(--transition-speed) ease, border-color var(--transition-speed) ease;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-logo {
+  color: var(--md-sys-color-primary);
+  transition: color var(--transition-speed) ease;
+}
+
+.logo-area h1 {
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+/* Theme Toggle Button */
+.icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--md-sys-color-on-surface-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.icon-button:hover {
+  background-color: var(--md-sys-color-surface-variant);
+}
+
+.icon-button:active {
+  background-color: var(--md-sys-color-outline-variant);
+}
+
+/* ==========================================================================
+   Main Content Container
+   ========================================================================== */
+.content-container {
+  flex: 1;
+  margin-top: var(--header-height);
+  margin-bottom: var(--bottom-nav-height);
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Tab panels management */
+.tab-panel {
+  display: none;
+  width: 100%;
+  max-width: 900px;
+  animation: fadeIn var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.panel-header {
+  margin-bottom: 24px;
+}
+
+.panel-header h2 {
+  font-size: 1.75rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+.panel-header p {
+  font-size: 0.875rem;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+/* ==========================================================================
+   Card Layouts
+   ========================================================================== */
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .card-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.m3-card {
+  border-radius: 24px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  transition: transform 0.2s ease, box-shadow var(--transition-speed) ease;
+}
+
+.card-elevated {
+  background-color: var(--md-sys-color-surface);
+  box-shadow: var(--elevation-1);
+}
+
+.card-elevated:hover {
+  box-shadow: var(--elevation-2);
+}
+
+.card-filled {
+  background-color: var(--md-sys-color-surface-variant);
+}
+
+.card-outlined {
+  background-color: transparent;
+  border: 1px solid var(--md-sys-color-outline);
+}
+
+.primary-card {
+  background: linear-gradient(135deg, hsl(var(--md-primary-h), 30%, 94%), hsl(var(--md-primary-h), 20%, 88%));
+  color: hsl(var(--md-primary-h), 95%, 15%);
+}
+
+body.dark-mode .primary-card {
+  background: linear-gradient(135deg, hsl(var(--md-primary-h), 40%, 20%), hsl(var(--md-primary-h), 30%, 15%));
+  color: hsl(var(--md-primary-h), 90%, 90%);
+}
+
+.card-title {
+  font-size: 1.25rem;
+  margin-bottom: 4px;
+}
+
+/* ==========================================================================
+   Form Controls & Inputs
+   ========================================================================== */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.da-split-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+}
+
+.m3-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+/* Text Input Outlined Style */
+.m3-input {
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--md-sys-color-outline);
+  background-color: transparent;
+  color: var(--md-sys-color-on-background);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.m3-input:focus {
+  border-color: var(--md-sys-color-primary);
+  border-width: 2px;
+  box-shadow: 0 0 0 3px hsl(var(--md-primary-h), 50%, 90%);
+}
+
+body.dark-mode .m3-input:focus {
+  box-shadow: 0 0 0 3px hsl(var(--md-primary-h), 50%, 25%);
+}
+
+.m3-input:disabled, .m3-select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background-color: var(--md-sys-color-surface-variant) !important;
+  border-style: dashed;
+}
+
+/* Select Control */
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.m3-select {
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  padding: 14px 40px 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--md-sys-color-outline);
+  background-color: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-background);
+  appearance: none;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.m3-select:focus {
+  border-color: var(--md-sys-color-primary);
+  border-width: 2px;
+}
+
+.select-wrapper::after {
+  content: "";
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--md-sys-color-on-surface-variant);
+  pointer-events: none;
+}
+
+/* Helper & Error Texts */
+.helper-text {
+  font-size: 0.75rem;
+  color: var(--md-sys-color-on-surface-variant);
+  line-height: 1.3;
+}
+
+/* Segmented Control Pill styling */
+.segmented-control {
+  display: flex;
+  background-color: var(--md-sys-color-surface-variant);
+  border-radius: 100px;
+  padding: 4px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.segment-option {
+  flex: 1;
+  cursor: pointer;
+  text-align: center;
+}
+
+.segment-option input {
+  display: none;
+}
+
+.segment-label {
+  display: block;
+  padding: 10px 4px;
+  border-radius: 100px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.segment-option input:checked + .segment-label {
+  background-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  box-shadow: var(--elevation-1);
+}
+
+/* Toggle Switch */
+.toggle-group {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.toggle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.toggle-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.m3-switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 32px;
+}
+
+.m3-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--md-sys-color-surface-variant);
+  border: 2px solid var(--md-sys-color-outline);
+  border-radius: 32px;
+  transition: var(--transition-speed);
+}
+
+.switch-slider::before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 6px;
+  bottom: 6px;
+  background-color: var(--md-sys-color-outline);
+  border-radius: 50%;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.m3-switch input:checked + .switch-slider {
+  background-color: var(--md-sys-color-primary);
+  border-color: var(--md-sys-color-primary);
+}
+
+.m3-switch input:checked + .switch-slider::before {
+  transform: translateX(20px) scale(1.3);
+  background-color: var(--md-sys-color-on-primary);
+}
+
+/* Read Only Box style */
+.read-only-box {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background-color: var(--md-sys-color-surface-variant);
+  color: var(--md-sys-color-on-background);
+  font-size: 1.15rem;
+  font-weight: 700;
+  border: 1px dashed var(--md-sys-color-outline);
+}
+
+/* ==========================================================================
+   Salary Calculations Formatting
+   ========================================================================== */
+.salary-totals {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.split-totals {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.full-width-total {
+  grid-column: span 2;
+  margin-top: 12px;
+  border-top: 1px dashed var(--md-sys-color-outline-variant);
+  padding-top: 16px;
+}
+
+.total-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.total-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}
+
+.total-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-family: 'Outfit', sans-serif;
+}
+
+.full-width-total .total-value {
+  font-size: 2.25rem;
+}
+
+.divider {
+  height: 1px;
+  background-color: var(--md-sys-color-outline-variant);
+  width: 100%;
+}
+
+.breakdown-subtitle {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-top: 8px;
+  letter-spacing: 0.02em;
+}
+
+.breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.breakdown-table th, .breakdown-table td {
+  padding: 8px 0;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.breakdown-table th {
+  text-align: left;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.card-disclosure {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  margin-top: 8px;
+}
+
+.alert-info {
+  background-color: var(--md-sys-color-info-container);
+  color: var(--md-sys-color-on-info-container);
+}
+
+.alert-warning {
+  background-color: var(--md-sys-color-warning-container);
+  color: var(--md-sys-color-on-warning-container);
+}
+
+.alert-success {
+  background-color: var(--md-sys-color-success-container);
+  color: var(--md-sys-color-on-success-container);
+}
+
+.alert-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ==========================================================================
+   Tax Regimes Comparison Page
+   ========================================================================== */
+.comparison-card {
+  padding: 20px;
+}
+
+.savings-banner {
+  padding: 16px;
+  border-radius: 16px;
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.4;
+  margin-bottom: 20px;
+  text-align: center;
+  animation: pulse 2s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.regime-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 480px) {
+  .regime-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.regime-col {
+  border-radius: 16px;
+  padding: 20px;
+  background-color: var(--md-sys-color-surface);
+  border: 2px solid var(--md-sys-color-outline-variant);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  transition: transform 0.2s ease, border-color var(--transition-speed) ease;
+}
+
+.regime-col.active {
+  border-color: var(--md-sys-color-primary);
+  background-color: hsl(var(--md-primary-h), 20%, 97%);
+  box-shadow: var(--elevation-1);
+}
+
+body.dark-mode .regime-col.active {
+  background-color: hsl(var(--md-primary-h), 20%, 14%);
+}
+
+.regime-name {
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.tag-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 100px;
+  background-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+
+.regime-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.stat-value {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.highlight-stat .stat-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--md-sys-color-primary);
+}
+
+.tax-rebate-notice {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-top: 12px;
+}
+
+/* ==========================================================================
+   Summary & Export View
+   ========================================================================== */
+.summary-sheet-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.summary-sheet {
+  background-color: var(--md-sys-color-surface);
+  border-radius: 24px;
+  padding: 32px 24px;
+  box-shadow: var(--elevation-2);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.summary-header {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+@media (min-width: 600px) {
+  .summary-header {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.summary-title-block h3 {
+  font-size: 1.5rem;
+}
+
+.summary-title-block .subtitle {
+  font-size: 0.8rem;
+  color: var(--md-sys-color-on-surface-variant);
+  margin-top: 2px;
+}
+
+.assessment-year {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 16px;
+  border-radius: 12px;
+  background-color: var(--md-sys-color-surface-variant);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.ay-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.ay-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--md-sys-color-primary);
+}
+
+.summary-row-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+}
+
+@media (min-width: 768px) {
+  .summary-row-grid {
+    grid-template-columns: 1.1fr 0.9fr;
+  }
+}
+
+.summary-section h4 {
+  font-size: 1.05rem;
+  color: var(--md-sys-color-primary);
+  margin-bottom: 12px;
+  border-bottom: 2px solid var(--md-sys-color-primary-container);
+  padding-bottom: 6px;
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.summary-table td, .summary-table th {
+  padding: 8px 0;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  color: var(--md-sys-color-on-surface);
+}
+
+.summary-table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.exemption-row td {
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-bold {
+  font-weight: 700;
+}
+
+.table-total-row td {
+  border-top: 2px solid var(--md-sys-color-outline);
+  border-bottom: none;
+  font-weight: 600;
+  padding-top: 10px;
+}
+
+.table-grand-total td {
+  border-top: 2px double var(--md-sys-color-outline);
+  border-bottom: none;
+  font-weight: 800;
+  font-size: 1rem;
+  padding: 12px 0;
+  color: var(--md-sys-color-primary);
+}
+
+.recommendation-badge {
+  padding: 16px;
+  border-radius: 16px;
+  background-color: var(--md-sys-color-success-container);
+  color: var(--md-sys-color-on-success-container);
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.summary-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+}
+
+/* Material 3 Buttons */
+.m3-button {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 100px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.1s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.m3-button:hover {
+  transform: translateY(-1px);
+}
+
+.m3-button:active {
+  transform: translateY(1px);
+}
+
+.button-filled {
+  background-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  box-shadow: var(--elevation-1);
+}
+
+.button-filled:hover {
+  box-shadow: var(--elevation-2);
+}
+
+.button-tonal {
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.button-icon {
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Bottom Navigation Bar (M3 Standard)
+   ========================================================================== */
+.bottom-nav {
+  height: var(--bottom-nav-height);
+  background-color: var(--md-sys-color-surface);
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+  display: flex;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 8px;
+  transition: background-color var(--transition-speed) ease, border-color var(--transition-speed) ease;
+}
+
+.nav-item {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 0.75rem;
+  font-weight: 500;
+  gap: 6px;
+  width: 90px;
+  height: 100%;
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 20px;
+  border-radius: 16px;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.nav-item:hover .nav-icon {
+  background-color: var(--md-sys-color-surface-variant);
+  transform: scale(1.05);
+}
+
+.nav-item.active {
+  color: var(--md-sys-color-primary);
+  font-weight: 700;
+}
+
+.nav-item.active .nav-icon {
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.nav-label {
+  letter-spacing: 0.02em;
+}
+
+/* ==========================================================================
+   Clipboard Toast Notification
+   ========================================================================== */
+.toast {
+  position: fixed;
+  bottom: calc(var(--bottom-nav-height) + 16px);
+  left: 50%;
+  transform: translateX(-50%) translateY(32px);
+  background-color: hsl(260, 20%, 15%);
+  color: hsl(260, 20%, 95%);
+  padding: 14px 24px;
+  border-radius: 100px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: var(--elevation-3);
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ==========================================================================
+   Print Stylesheet (@media print)
+   ========================================================================== */
+@media print {
+  /* Hide all app wrapper scaffolding */
+  body {
+    background-color: #fff !important;
+    color: #000 !important;
+    font-size: 11pt;
+    height: auto;
+    display: block;
+  }
+  
+  .top-app-bar,
+  .bottom-nav,
+  .summary-actions,
+  .panel-header,
+  .toast,
+  header,
+  nav,
+  button {
+    display: none !important;
+  }
+
+  .content-container {
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .tab-panel {
+    display: none !important;
+  }
+
+  /* Make summary panel always active and formatted for print */
+  #tab-summary {
+    display: block !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .summary-sheet-wrapper {
+    display: block !important;
+  }
+
+  .summary-sheet {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+    border-radius: 0 !important;
+    padding: 20px !important;
+    margin: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+    height: auto !important;
+  }
+
+  .summary-header {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    border-bottom: 2px solid #000 !important;
+    padding-bottom: 12px !important;
+  }
+
+  .summary-title-block h3 {
+    color: #000 !important;
+  }
+
+  .assessment-year {
+    background-color: #eee !important;
+    border: 1px solid #999 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .ay-value {
+    color: #000 !important;
+  }
+
+  .summary-row-grid {
+    grid-template-columns: 1.1fr 0.9fr !important;
+    gap: 30px !important;
+    margin-top: 20px !important;
+  }
+
+  .summary-section h4 {
+    color: #000 !important;
+    border-bottom: 2px solid #000 !important;
+  }
+
+  .summary-table td, .summary-table th {
+    border-bottom: 1px solid #ddd !important;
+    color: #000 !important;
+  }
+
+  .table-grand-total td {
+    color: #000 !important;
+    font-size: 1.1rem !important;
+  }
+
+  .recommendation-badge {
+    background-color: #e2f0d9 !important;
+    color: #385723 !important;
+    border: 1px solid #385723 !important;
+    margin-top: 20px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-footer {
+    display: block !important;
+    text-align: center;
+    font-size: 8pt;
+    color: #666;
+    margin-top: 40px;
+    border-top: 1px dashed #ccc;
+    padding-top: 10px;
+  }
+}

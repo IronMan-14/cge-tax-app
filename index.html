@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CGE Salary & Tax Calculator</title>
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#6750A4">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CGE Calc">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236750A4'%3E%3Cpath d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4 6h-4v2h4v2h-4v2h4v2H9V7h6v2z'/%3E%3C/svg%3E">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="light-mode">
+  
+  <!-- Top App Bar -->
+  <header class="top-app-bar">
+    <div class="header-content">
+      <div class="logo-area">
+        <svg class="app-logo" viewBox="0 0 24 24" width="24" height="24">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4 6h-4v2h4v2h-4v2h4v2H9V7h6v2z" fill="currentColor"/>
+        </svg>
+        <h1>CGE Pay & Tax</h1>
+      </div>
+      <button class="icon-button" id="theme-toggle" aria-label="Toggle dark mode">
+        <!-- Sun Icon -->
+        <svg class="sun-icon" viewBox="0 0 24 24" width="24" height="24">
+          <path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.02 0-1.41s-1.02-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z" fill="currentColor"/>
+        </svg>
+        <!-- Moon Icon -->
+        <svg class="moon-icon" viewBox="0 0 24 24" width="24" height="24" style="display: none;">
+          <path d="M12.3 22c5.02 0 9.1-4.08 9.1-9.1 0-1.94-.61-3.74-1.66-5.22-.38-.54-1.06-.4-1.25.23-.9 2.97-3.66 5.12-6.93 5.12-3.26 0-6.02-2.14-6.92-5.11-.19-.63-.87-.77-1.26-.23A9.096 9.096 0 002.9 12.9C2.9 17.92 6.98 22 12.3 22z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Scrollable Content -->
+  <main class="content-container">
+    
+    <!-- TAB 1: SALARY CALCULATOR -->
+    <section id="tab-salary" class="tab-panel active">
+      <div class="panel-header">
+        <h2>7th CPC Salary Calculator</h2>
+        <p>Estimate your split-period monthly gross pay based on Pay Matrix and DA standards.</p>
+      </div>
+
+      <div class="card-grid">
+        <!-- Input Form Card -->
+        <div class="m3-card card-elevated">
+          <h3 class="card-title">Salary Parameters</h3>
+          
+          <div class="form-group toggle-group">
+            <div class="toggle-info">
+              <label for="quarters-toggle" class="toggle-title">Staying in Official Quarters</label>
+              <span class="helper-text">Checking this overrides city tiers and sets HRA to ₹0.</span>
+            </div>
+            <label class="m3-switch">
+              <input type="checkbox" id="quarters-toggle">
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label for="pay-level" class="m3-label">Pay Level (7th CPC Matrix)</label>
+            <div class="select-wrapper">
+              <select id="pay-level" class="m3-select">
+                <option value="1">Level 1 (₹18,000)</option>
+                <option value="2">Level 2 (₹19,900)</option>
+                <option value="3">Level 3 (₹21,700)</option>
+                <option value="4">Level 4 (₹25,500)</option>
+                <option value="5">Level 5 (₹29,200)</option>
+                <option value="6">Level 6 (₹35,400)</option>
+                <option value="7">Level 7 (₹44,900)</option>
+                <option value="8">Level 8 (₹47,600)</option>
+                <option value="9">Level 9 (₹53,100)</option>
+                <option value="10" selected>Level 10 (₹56,100)</option>
+                <option value="11">Level 11 (₹67,700)</option>
+                <option value="12">Level 12 (₹78,800)</option>
+                <option value="13">Level 13 (₹1,23,100)</option>
+                <option value="13A">Level 13A (₹1,31,100)</option>
+                <option value="14">Level 14 (₹1,44,200)</option>
+                <option value="15">Level 15 (₹1,82,200)</option>
+                <option value="16">Level 16 (₹2,05,400)</option>
+                <option value="17">Level 17 (₹2,25,000)</option>
+                <option value="18">Level 18 (₹2,50,000)</option>
+              </select>
+            </div>
+            <span class="helper-text">Auto-fills the minimum starting Basic Pay.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="basic-pay" class="m3-label">Basic Pay (₹ per month)</label>
+            <input type="number" id="basic-pay" class="m3-input" value="56100" min="18000" step="100" placeholder="e.g. 56100">
+            <span class="helper-text">You can manually edit this to match your current basic pay.</span>
+          </div>
+
+          <div class="da-split-group">
+            <div class="form-group">
+              <label for="da-percent-p1" class="m3-label">DA % (Apr - Jun)</label>
+              <input type="number" id="da-percent-p1" class="m3-input" value="50" min="0" max="150" step="0.5" placeholder="e.g. 50">
+            </div>
+            <div class="form-group">
+              <label for="da-percent-p2" class="m3-label">DA % (Jul - Mar)</label>
+              <input type="number" id="da-percent-p2" class="m3-input" value="53" min="0" max="150" step="0.5" placeholder="e.g. 53">
+            </div>
+          </div>
+          <span class="helper-text">Allowance split: Period 1 (3 months) and Period 2 (9 months).</span>
+
+          <div class="form-group" id="city-tier-group">
+            <label class="m3-label">HRA City Classification</label>
+            <div class="segmented-control">
+              <label class="segment-option">
+                <input type="radio" name="city-tier" value="X" checked>
+                <span class="segment-label">Class X</span>
+              </label>
+              <label class="segment-option">
+                <input type="radio" name="city-tier" value="Y">
+                <span class="segment-label">Class Y</span>
+              </label>
+              <label class="segment-option">
+                <input type="radio" name="city-tier" value="Z">
+                <span class="segment-label">Class Z</span>
+              </label>
+            </div>
+            <span class="helper-text">Rates: X (27%/30%), Y (18%/20%), Z (9%/10%) depending on if period DA > 50%.</span>
+          </div>
+
+          <div class="form-group toggle-group">
+            <div class="toggle-info">
+              <label for="tpta-toggle" class="toggle-title">Higher TPTA City (Category A)</label>
+              <span class="helper-text">Check if posted in A-tier cities for higher Transport Allowance base rates.</span>
+            </div>
+            <label class="m3-switch">
+              <input type="checkbox" id="tpta-toggle" checked>
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Live Calculation Card -->
+        <div class="m3-card card-filled primary-card">
+          <h3 class="card-title">Salary Breakdown</h3>
+          
+          <div class="salary-totals split-totals">
+            <div class="total-item">
+              <span class="total-label">Monthly Gross (Apr - Jun)</span>
+              <span class="total-value" id="monthly-gross-p1">₹0</span>
+            </div>
+            <div class="total-item">
+              <span class="total-label">Monthly Gross (Jul - Mar)</span>
+              <span class="total-value" id="monthly-gross-p2">₹0</span>
+            </div>
+            <div class="total-item full-width-total">
+              <span class="total-label">Computed Annual Gross Salary</span>
+              <span class="total-value" id="annual-gross">₹0</span>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <h4 class="breakdown-subtitle">Period Comparison</h4>
+          <table class="breakdown-table">
+            <thead>
+              <tr>
+                <th>Component</th>
+                <th class="text-right">Apr - Jun</th>
+                <th class="text-right">Jul - Mar</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Basic Pay</td>
+                <td class="text-right" id="breakdown-basic-p1">₹0</td>
+                <td class="text-right" id="breakdown-basic-p2">₹0</td>
+              </tr>
+              <tr>
+                <td>Dearness Allowance</td>
+                <td class="text-right" id="breakdown-da-p1">₹0</td>
+                <td class="text-right" id="breakdown-da-p2">₹0</td>
+              </tr>
+              <tr>
+                <td>HRA</td>
+                <td class="text-right" id="breakdown-hra-p1">₹0</td>
+                <td class="text-right" id="breakdown-hra-p2">₹0</td>
+              </tr>
+              <tr>
+                <td>Transport Allowance</td>
+                <td class="text-right" id="breakdown-ta-p1">₹0</td>
+                <td class="text-right" id="breakdown-ta-p2">₹0</td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <div class="card-disclosure alert-info" id="hra-notice" style="display: none;">
+            <svg viewBox="0 0 24 24" width="16" height="16" class="alert-icon">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="currentColor"/>
+            </svg>
+            <span id="hra-notice-text">HRA rates are automatically adjusted when DA crosses 50%. Minimum HRA floor rules applied.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: TAX CALCULATOR -->
+    <section id="tab-tax" class="tab-panel">
+      <div class="panel-header">
+        <h2>Income Tax Estimator</h2>
+        <p>Compare tax liabilities. Old Regime calculations now include Section 10 exemptions.</p>
+      </div>
+
+      <div class="card-grid">
+        <!-- Input Deductions Card -->
+        <div class="m3-card card-elevated">
+          <h3 class="card-title">Deductions & Exemptions</h3>
+          
+          <div class="form-group">
+            <label class="m3-label">Annual Gross Salary (from Salary Tab)</label>
+            <div class="read-only-box" id="tax-gross-display">₹0</div>
+          </div>
+
+          <div class="form-group" id="rent-input-group">
+            <label for="rent-paid" class="m3-label">Monthly Rent Paid (₹)</label>
+            <input type="number" id="rent-paid" class="m3-input" value="15000" min="0" step="1000" placeholder="e.g. 15000">
+            <span class="helper-text">Required to calculate HRA Exemption (Sec 10(13A)) under Old Regime.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="cea-children" class="m3-label">Children for Education Allowance (CEA)</label>
+            <div class="select-wrapper">
+              <select id="cea-children" class="m3-select">
+                <option value="0">0 Children (Exemption: ₹0)</option>
+                <option value="1">1 Child (Exemption: ₹1,200/yr)</option>
+                <option value="2" selected>2 Children (Exemption: ₹2,400/yr)</option>
+              </select>
+            </div>
+            <span class="helper-text">Exempts ₹100/month per child (max 2 children) under Old Regime.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="exemption-ltc" class="m3-label">LTC / Leave Encashment Exemption (₹)</label>
+            <input type="number" id="exemption-ltc" class="m3-input" value="0" min="0" step="5000" placeholder="e.g. 0">
+            <span class="helper-text">Under Section 10(5), deducts directly from Old Regime taxable income.</span>
+          </div>
+
+          <div class="divider"></div>
+
+          <h4 class="card-subtitle">Section 80 Deductions (Old Regime)</h4>
+
+          <div class="form-group">
+            <label for="deduct-80c" class="m3-label">Section 80C Deductions (₹)</label>
+            <input type="number" id="deduct-80c" class="m3-input" value="150000" min="0" max="200000" step="5000" placeholder="e.g. 150000">
+            <span class="helper-text">PPF, EPF, ELSS, Life Insurance, etc. Capped at ₹1,50,000.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="deduct-80d" class="m3-label">Section 80D Medical Insurance (₹)</label>
+            <input type="number" id="deduct-80d" class="m3-input" value="25000" min="0" max="100000" step="1000" placeholder="e.g. 25000">
+            <span class="helper-text">Health insurance for self/parents. Capped at ₹1,00,000.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="deduct-nps" class="m3-label">NPS Sec 80CCD(1B) Contribution (₹)</label>
+            <input type="number" id="deduct-nps" class="m3-input" value="50000" min="0" max="100000" step="5000" placeholder="e.g. 50000">
+            <span class="helper-text">Additional voluntary NPS contribution. Capped at ₹50,000.</span>
+          </div>
+        </div>
+
+        <!-- Regime Comparison Card -->
+        <div class="m3-card card-filled comparison-card">
+          <h3 class="card-title">Tax Regime Comparison</h3>
+          
+          <div id="savings-banner" class="savings-banner text-center">
+            <!-- Dynamically populated saving advice -->
+          </div>
+
+          <div class="regime-grid">
+            <!-- Old Regime -->
+            <div class="regime-col" id="old-regime-box">
+              <h4 class="regime-name">Old Regime</h4>
+              <div class="divider"></div>
+              <div class="regime-stat">
+                <span class="stat-label">Taxable Income</span>
+                <span class="stat-value" id="old-taxable">₹0</span>
+              </div>
+              <div class="regime-stat">
+                <span class="stat-label">Base Tax</span>
+                <span class="stat-value" id="old-base-tax">₹0</span>
+              </div>
+              <div class="regime-stat">
+                <span class="stat-label">Health & Cess (4%)</span>
+                <span class="stat-value" id="old-cess">₹0</span>
+              </div>
+              <div class="regime-stat highlight-stat">
+                <span class="stat-label">Total Tax Due</span>
+                <span class="stat-value" id="old-total-tax">₹0</span>
+              </div>
+            </div>
+
+            <!-- New Regime -->
+            <div class="regime-col active" id="new-regime-box">
+              <h4 class="regime-name">New Regime <span class="tag-badge">Default</span></h4>
+              <div class="divider"></div>
+              <div class="regime-stat">
+                <span class="stat-label">Taxable Income</span>
+                <span class="stat-value" id="new-taxable">₹0</span>
+              </div>
+              <div class="regime-stat">
+                <span class="stat-label">Base Tax</span>
+                <span class="stat-value" id="new-base-tax">₹0</span>
+              </div>
+              <div class="regime-stat">
+                <span class="stat-label">Health & Cess (4%)</span>
+                <span class="stat-value" id="new-cess">₹0</span>
+              </div>
+              <div class="regime-stat highlight-stat">
+                <span class="stat-label">Total Tax Due</span>
+                <span class="stat-value" id="new-total-tax">₹0</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="tax-rebate-notice alert-success" id="rebate-87a-notice" style="display: none;">
+            <svg viewBox="0 0 24 24" width="16" height="16" class="alert-icon">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+            </svg>
+            <span id="rebate-text">Section 87A rebate applied. Net tax is zero.</span>
+          </div>
+
+          <div class="tax-rebate-notice alert-info" id="marginal-relief-notice" style="display: none;">
+            <svg viewBox="0 0 24 24" width="16" height="16" class="alert-icon">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="currentColor"/>
+            </svg>
+            <span>Marginal Relief under Section 87A applied to avoid tax cliff.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: SUMMARY & EXPORT -->
+    <section id="tab-summary" class="tab-panel">
+      <div class="panel-header">
+        <h2>Tax Filing & Salary Summary</h2>
+        <p>A comprehensive overview of your annual salary components and recommended filing details.</p>
+      </div>
+
+      <div class="summary-sheet-wrapper">
+        <div class="m3-card card-outlined summary-sheet" id="print-area">
+          <div class="summary-header">
+            <div class="summary-title-block">
+              <h3>Salary & Tax Assessment Sheet</h3>
+              <p class="subtitle">Prepared for Central Government Employees • 7th Pay Commission Scale</p>
+            </div>
+            <div class="assessment-year">
+              <span class="ay-label">Financial Year</span>
+              <span class="ay-value">2025-26 & 2026-27</span>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="summary-row-grid">
+            <!-- Salary Section -->
+            <div class="summary-section">
+              <h4>Salary Breakdown</h4>
+              <table class="summary-table">
+                <thead>
+                  <tr>
+                    <th>Component</th>
+                    <th class="text-right">Apr - Jun (3m)</th>
+                    <th class="text-right">Jul - Mar (9m)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Basic Pay (Monthly)</td>
+                    <td class="text-right" id="sum-basic-p1">₹0</td>
+                    <td class="text-right" id="sum-basic-p2">₹0</td>
+                  </tr>
+                  <tr>
+                    <td>Dearness Allowance</td>
+                    <td class="text-right" id="sum-da-p1">₹0</td>
+                    <td class="text-right" id="sum-da-p2">₹0</td>
+                  </tr>
+                  <tr>
+                    <td>House Rent Allowance (HRA)</td>
+                    <td class="text-right" id="sum-hra-p1">₹0</td>
+                    <td class="text-right" id="sum-hra-p2">₹0</td>
+                  </tr>
+                  <tr>
+                    <td>Transport Allowance (TA)</td>
+                    <td class="text-right" id="sum-ta-p1">₹0</td>
+                    <td class="text-right" id="sum-ta-p2">₹0</td>
+                  </tr>
+                  <tr class="table-total-row">
+                    <td>Monthly Gross Salary</td>
+                    <td class="text-right" id="sum-monthly-gross-p1">₹0</td>
+                    <td class="text-right" id="sum-monthly-gross-p2">₹0</td>
+                  </tr>
+                  <tr class="table-grand-total">
+                    <td colspan="2">Annual Gross Salary (3m + 9m)</td>
+                    <td class="text-right" id="sum-annual-gross">₹0</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Tax Section -->
+            <div class="summary-section">
+              <h4>Tax Calculation Summary</h4>
+              <table class="summary-table">
+                <thead>
+                  <tr>
+                    <th>Component</th>
+                    <th class="text-right">Old Regime</th>
+                    <th class="text-right">New Regime</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Gross Annual Income</td>
+                    <td class="text-right" id="sum-tax-gross-old">₹0</td>
+                    <td class="text-right" id="sum-tax-gross-new">₹0</td>
+                  </tr>
+                  <tr>
+                    <td>Standard Deduction</td>
+                    <td class="text-right" id="sum-std-old">-₹50,000</td>
+                    <td class="text-right" id="sum-std-new">-₹75,000</td>
+                  </tr>
+                  <tr class="exemption-row">
+                    <td>HRA Exemption (Sec 10(13A))</td>
+                    <td class="text-right" id="sum-ex-hra">-₹0</td>
+                    <td class="text-right">N/A</td>
+                  </tr>
+                  <tr class="exemption-row">
+                    <td>CEA Exemption (Sec 10(14))</td>
+                    <td class="text-right" id="sum-ex-cea">-₹0</td>
+                    <td class="text-right">N/A</td>
+                  </tr>
+                  <tr class="exemption-row">
+                    <td>LTC Exemption (Sec 10(5))</td>
+                    <td class="text-right" id="sum-ex-ltc">-₹0</td>
+                    <td class="text-right">N/A</td>
+                  </tr>
+                  <tr>
+                    <td>Sec 80C Deductions</td>
+                    <td class="text-right" id="sum-80c">-₹0</td>
+                    <td class="text-right">N/A</td>
+                  </tr>
+                  <tr>
+                    <td>Sec 80D Medical</td>
+                    <td class="text-right" id="sum-80d">-₹0</td>
+                    <td class="text-right">N/A</td>
+                  </tr>
+                  <tr>
+                    <td>NPS Sec 80CCD(1B)</td>
+                    <td class="text-right" id="sum-nps">-₹0</td>
+                    <td class="text-right">N/A</td>
+                  </tr>
+                  <tr class="table-total-row">
+                    <td>Total Taxable Income</td>
+                    <td class="text-right" id="sum-taxable-old">₹0</td>
+                    <td class="text-right" id="sum-taxable-new">₹0</td>
+                  </tr>
+                  <tr>
+                    <td>Calculated Base Tax</td>
+                    <td class="text-right" id="sum-basetax-old">₹0</td>
+                    <td class="text-right" id="sum-basetax-new">₹0</td>
+                  </tr>
+                  <tr>
+                    <td>Sec 87A Rebate / Relief</td>
+                    <td class="text-right" id="sum-rebate-old">-₹0</td>
+                    <td class="text-right" id="sum-rebate-new">-₹0</td>
+                  </tr>
+                  <tr>
+                    <td>Cess (4%)</td>
+                    <td class="text-right" id="sum-cess-old">₹0</td>
+                    <td class="text-right" id="sum-cess-new">₹0</td>
+                  </tr>
+                  <tr class="table-grand-total">
+                    <td>Total Tax Liability</td>
+                    <td class="text-right text-bold" id="sum-totaltax-old">₹0</td>
+                    <td class="text-right text-bold" id="sum-totaltax-new">₹0</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Recommendation Panel -->
+          <div class="recommendation-badge" id="sum-recommendation">
+            <!-- Dynamic Recommendation text -->
+          </div>
+          
+          <div class="print-footer" style="display: none;">
+            <p>Calculated dynamically via CGE Salary & Tax PWA. Accurate as per current 7th CPC guidelines and latest Union Budget rules.</p>
+          </div>
+        </div>
+
+        <div class="summary-actions">
+          <button class="m3-button button-tonal" id="copy-summary-btn">
+            <svg viewBox="0 0 24 24" width="18" height="18" class="button-icon">
+              <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" fill="currentColor"/>
+            </svg>
+            Copy Text Summary
+          </button>
+          
+          <button class="m3-button button-filled" id="print-pdf-btn">
+            <svg viewBox="0 0 24 24" width="18" height="18" class="button-icon">
+              <path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z" fill="currentColor"/>
+            </svg>
+            Export to PDF
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Navigation Bar -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" id="nav-btn-salary">
+      <svg class="nav-icon" viewBox="0 0 24 24" width="24" height="24">
+        <path d="M5 8h14V6H5v2zm0 4h14v-2H5v2zm0 4h14v-2H5v2zm0 4h14v-2H5v2z" fill="currentColor"/>
+      </svg>
+      <span class="nav-label">Salary</span>
+    </button>
+    <button class="nav-item" id="nav-btn-tax">
+      <svg class="nav-icon" viewBox="0 0 24 24" width="24" height="24">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z" fill="currentColor"/>
+      </svg>
+      <span class="nav-label">Tax</span>
+    </button>
+    <button class="nav-item" id="nav-btn-summary">
+      <svg class="nav-icon" viewBox="0 0 24 24" width="24" height="24">
+        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" fill="currentColor"/>
+      </svg>
+      <span class="nav-label">Summary</span>
+    </button>
+  </nav>
+
+  <!-- Clipboard Notification Toast -->
+  <div class="toast" id="toast">Summary copied to clipboard!</div>
+
+  <!-- Service Worker Registration -->
+  <script src="app.js"></script>
+</body>
+</html>
