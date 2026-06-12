@@ -32,25 +32,37 @@ const state = {
   basicPay: 56100, // March Base Basic Pay
   incrementAmount: 1700,
   incrementMonth: "January",
-  ceaReceived: 54000,
-  cityTier: "X", // X, Y, or Z
+  financialYear: "2025-26",
+  daRateP1: 53,
+  daRateP2: 55,
+  daRateP3: 58,
+  baseTaRate: 3600,
+  hraRateSelect: 30,
+  cityTier: "X",
   isHigherTpta: true,
   isQuarters: false,
+  arrPromo: 0,
+  elLtc: 0,
 
   // Tax Inputs & Deductions
-  rentPaid: 15000,
+  rentPaid: 180000,
   ceaChildren: 2,
-  exemptionLtc: 0,
-  deduct24b: 0,        // Section 24(b) - capped at 2,00,000
-  deduct80E: 0,        // Section 80E - no limit
-  deductProfTax: 2500, // Section 16(iii) - no limit
-  deduct80C: 150000,   // capped at 1,50,000
-  deduct80D: 25000,    // capped at 25,000
-  deductNps: 50000,    // capped at 50,000
-  tdsPaid: 0,
+  ceaReceived: 54000,
+  deduct24b: 0,        // Section 24(b) - Capped at 2,00,000
+  deduct80E: 0,        // Section 80E - No limit
+  deductProfTax: 2500, // Section 16(iii) - No limit
+  deduct80cLic: 50000,
+  deduct80cPli: 0,
+  deduct80cGpf: 100000,
+  deduct80cTuition: 0,
+  deduct80cHousing: 0,
+  deduct80cInsurance: 0,
+  deduct80D: 25000,    // Health Insurance - Capped at 25,000
+  deductNps: 50000,    // NPS 80CCD(1B) - Capped at 50,000
+  tdsPaid: 0,          // Total Income Tax paid
 
   // Calculated Outputs
-  months: [], // Array of 12 month objects representing March to February
+  months: [],
   annualGrossSalary: 0,
   aprilArrears: 0,
   octoberArrears: 0,
@@ -78,6 +90,9 @@ const state = {
     netLiability: 0
   }
 };
+window.state = state;
+
+
 
 const MONTHS_ORDER = [
   "March", "April", "May", "June", "July", "August", 
@@ -89,7 +104,7 @@ const MONTHS_ORDER = [
 // ==========================================================================
 
 /**
- * Calculates base TA rate before DA.
+ * Calculates standard base TA rate before DA.
  */
 function getBaseTaRate(payLevel, basic, isHigherTpta) {
   let baseTa = 0;
@@ -111,70 +126,41 @@ function getBaseTaRate(payLevel, basic, isHigherTpta) {
 }
 
 /**
- * Calculates HRA based on city tier, DA percentage, and Official Quarters status.
- * Rates:
- * - X: 30% (Floor: 5,400)
- * - Y: 20% (Floor: 3,600)
- * - Z: 10% (Floor: 1,800)
+ * Calculates HRA based on HRA rate select.
+ * X floor: 5400, Y floor: 3600, Z floor: 1800.
  */
-function calculateHra(basic, daPercent, tier, isQuarters) {
-  if (isQuarters) {
+function calculateHra(basic, ratePercent) {
+  if (ratePercent === 0) {
     return 0;
   }
 
-  const isDaAbove50 = daPercent > 50;
-  let rate = 0;
   let floor = 0;
-
-  switch (tier) {
-    case "X":
-      rate = isDaAbove50 ? 30 : 27;
-      floor = 5400;
-      break;
-    case "Y":
-      rate = isDaAbove50 ? 20 : 18;
-      floor = 3600;
-      break;
-    case "Z":
-    default:
-      rate = isDaAbove50 ? 10 : 9;
-      floor = 1800;
-      break;
+  if (ratePercent === 27 || ratePercent === 30) {
+    floor = 5400;
+  } else if (ratePercent === 18 || ratePercent === 20) {
+    floor = 3600;
+  } else if (ratePercent === 9 || ratePercent === 10) {
+    floor = 1800;
   }
 
-  const calculatedHra = basic * (rate / 100);
+  const calculatedHra = basic * (ratePercent / 100);
   return Math.max(calculatedHra, floor);
 }
 
 /**
- * Calculates Transport Allowance (TA) based on Pay Level, Basic Pay, and Higher TPTA City status.
- */
-function calculateTa(payLevel, basic, daPercent, isHigherTpta) {
-  const baseTa = getBaseTaRate(payLevel, basic, isHigherTpta);
-  const daOnTa = baseTa * (daPercent / 100);
-  return baseTa + daOnTa;
-}
-
-/**
  * Calculates HRA Tax Exemption (Sec 10(13A)) under Old Regime.
- * Exemption is the minimum of 3 values:
- * 1. Actual HRA received.
- * 2. Rent paid minus 10% of (Basic + DA).
- * 3. 50% (Class X) or 40% (Class Y/Z) of (Basic + DA).
  */
-function calculateHraExemption(months, rentPaid, cityTier, isQuarters) {
-  if (isQuarters || rentPaid <= 0) {
+function calculateHraExemption(months, rentPaidAnnual, cityTier, hraRateSelect) {
+  if (hraRateSelect === 0 || rentPaidAnnual <= 0) {
     return 0;
   }
 
   const annualHraReceived = months.reduce((sum, m) => sum + m.hra, 0);
-  const annualRentPaid = rentPaid * 12;
-
   const annualBasic = months.reduce((sum, m) => sum + m.basic, 0);
   const annualDa = months.reduce((sum, m) => sum + m.da, 0);
   const BDA_a = annualBasic + annualDa;
 
-  const rentExcess = Math.max(0, annualRentPaid - (0.10 * BDA_a));
+  const rentExcess = Math.max(0, rentPaidAnnual - (0.10 * BDA_a));
   const cityPercentage = cityTier === "X" ? 0.50 : 0.40;
   const limitByCity = BDA_a * cityPercentage;
 
@@ -184,14 +170,14 @@ function calculateHraExemption(months, rentPaid, cityTier, isQuarters) {
 /**
  * Calculates Old Tax Regime liability (FY 2025-26).
  */
-function calculateOldRegimeTax(grossIncome, exemptHra, exemptCea, exemptLtc, deduct24b, deduct80E, deductProfTax, deduct80C, deduct80D, deductNps) {
+function calculateOldRegimeTax(grossIncome, exemptHra, exemptCea, exemptLtc, deduct24b, deduct80E, deductProfTax, total80C, deduct80D, deductNps) {
   const capped24b = Math.min(deduct24b, 200000);
-  const capped80C = Math.min(deduct80C, 150000);
+  const capped80C = Math.min(total80C, 150000);
   const capped80D = Math.min(deduct80D, 25000);
   const cappedNps = Math.min(deductNps, 50000);
   const standardDeduction = 50000;
 
-  // Total deductions = standard deduction + capped 24b + 80E + 16iii + capped 80 series + Section 10 exemptions
+  // Deductions: std + exemptHra + exemptCea + exemptLtc + capped24b + 80E + PT + capped 80C + capped 80D + capped NPS
   const totalDeductions = standardDeduction + exemptHra + exemptCea + exemptLtc + capped24b + deduct80E + deductProfTax + capped80C + capped80D + cappedNps;
   const taxableIncome = Math.max(0, grossIncome - totalDeductions);
 
@@ -232,7 +218,6 @@ function calculateOldRegimeTax(grossIncome, exemptHra, exemptCea, exemptLtc, ded
 
 /**
  * Calculates New Tax Regime base tax using the Budget 2025-26 slabs.
- * - Up to 4L: Nil | 4L-8L: 5% | 8L-12L: 10% | 12L-16L: 15% | 16L-20L: 20% | 20L-24L: 25% | Above 24L: 30%
  */
 function calculateNewRegimeBaseTax(income) {
   if (income <= 400000) return 0;
@@ -285,7 +270,7 @@ function calculateNewRegimeTax(grossIncome) {
     rebate = baseTax;
     finalBaseTax = 0;
   } else {
-    // Marginal Relief check: tax payable <= excess income over 12L
+    // Marginal Relief check
     const excessIncome = taxableIncome - 1200000;
     if (baseTax > excessIncome) {
       finalBaseTax = excessIncome;
@@ -308,7 +293,6 @@ function calculateNewRegimeTax(grossIncome) {
 
 /**
  * Helper to display values dynamically across months inside a period.
- * If values are constant, returns single formatted currency, otherwise a range "Min / Max".
  */
 function formatPeriodValues(monthsInPeriod, key) {
   const values = monthsInPeriod.map(m => m[key]);
@@ -329,10 +313,21 @@ function updateCalculations() {
   state.basicPay = parseFloat(document.getElementById("basic-pay").value) || 0;
   state.incrementAmount = parseFloat(document.getElementById("increment-amount").value) || 0;
   state.incrementMonth = document.getElementById("increment-month").value;
-  state.ceaReceived = parseFloat(document.getElementById("cea-received").value) || 0;
-  state.isQuarters = document.getElementById("quarters-toggle").checked;
+  state.financialYear = document.getElementById("financial-year").value;
+
+  state.daRateP1 = parseFloat(document.getElementById("da-rate-p1").value) || 0;
+  state.daRateP2 = parseFloat(document.getElementById("da-rate-p2").value) || 0;
+  state.daRateP3 = parseFloat(document.getElementById("da-rate-p3").value) || 0;
+
+  state.baseTaRate = parseFloat(document.getElementById("base-ta-rate").value) || 0;
+  state.hraRateSelect = parseFloat(document.getElementById("hra-rate-select").value) || 0;
+  
+  state.isQuarters = (state.hraRateSelect === 0);
   state.isHigherTpta = document.getElementById("tpta-toggle").checked;
   state.payLevel = document.getElementById("pay-level").value;
+
+  state.arrPromo = parseFloat(document.getElementById("arr-promo").value) || 0;
+  state.elLtc = parseFloat(document.getElementById("el-ltc").value) || 0;
 
   const cityTierElements = document.getElementsByName("city-tier");
   for (const el of cityTierElements) {
@@ -342,30 +337,23 @@ function updateCalculations() {
     }
   }
 
-  // Handle quarters and rent visibility
-  const rentInput = document.getElementById("rent-paid");
-  const rentGroup = document.getElementById("rent-input-group");
-  const cityTierGroup = document.getElementById("city-tier-group");
-
-  if (state.isQuarters) {
-    rentInput.disabled = true;
-    rentInput.value = 0;
-    state.rentPaid = 0;
-    if (rentGroup) rentGroup.style.opacity = "0.5";
-    if (cityTierGroup) cityTierGroup.style.opacity = "0.5";
-  } else {
-    rentInput.disabled = false;
-    state.rentPaid = parseFloat(rentInput.value) || 0;
-    if (rentGroup) rentGroup.style.opacity = "1";
-    if (cityTierGroup) cityTierGroup.style.opacity = "1";
-  }
-
+  // Deductions inputs
+  state.rentPaid = parseFloat(document.getElementById("rent-paid").value) || 0;
   state.ceaChildren = parseInt(document.getElementById("cea-children").value, 10) || 0;
-  state.exemptionLtc = parseFloat(document.getElementById("exemption-ltc").value) || 0;
+  state.ceaReceived = parseFloat(document.getElementById("cea-received").value) || 0;
+
   state.deduct24b = parseFloat(document.getElementById("deduct-24b").value) || 0;
   state.deduct80E = parseFloat(document.getElementById("deduct-80e").value) || 0;
   state.deductProfTax = parseFloat(document.getElementById("deduct-prof-tax").value) || 0;
-  state.deduct80C = parseFloat(document.getElementById("deduct-80c").value) || 0;
+
+  // Grouped 80C Deductions
+  state.deduct80cLic = parseFloat(document.getElementById("deduct-80c-lic").value) || 0;
+  state.deduct80cPli = parseFloat(document.getElementById("deduct-80c-pli").value) || 0;
+  state.deduct80cGpf = parseFloat(document.getElementById("deduct-80c-gpf").value) || 0;
+  state.deduct80cTuition = parseFloat(document.getElementById("deduct-80c-tuition").value) || 0;
+  state.deduct80cHousing = parseFloat(document.getElementById("deduct-80c-housing").value) || 0;
+  state.deduct80cInsurance = parseFloat(document.getElementById("deduct-80c-insurance").value) || 0;
+
   state.deduct80D = parseFloat(document.getElementById("deduct-80d").value) || 0;
   state.deductNps = parseFloat(document.getElementById("deduct-nps").value) || 0;
   state.tdsPaid = parseFloat(document.getElementById("tds-paid").value) || 0;
@@ -384,19 +372,19 @@ function updateCalculations() {
     }
 
     // B. 3-Period DA (Locked to March Base Pay)
-    let daPercent = 53;
+    let daPercent = state.daRateP1;
     if (m >= 1 && m <= 6) {
-      daPercent = 55; // April - September
+      daPercent = state.daRateP2; // April - September
     } else if (m >= 7 && m <= 11) {
-      daPercent = 58; // October - February
+      daPercent = state.daRateP3; // October - February
     }
     const da = state.basicPay * (daPercent / 100);
 
     // C. HRA
-    const hra = calculateHra(basic, daPercent, state.cityTier, state.isQuarters);
+    const hra = calculateHra(basic, state.hraRateSelect);
 
     // D. TA
-    const ta = calculateTa(state.payLevel, basic, daPercent, state.isHigherTpta);
+    const ta = state.baseTaRate * (1 + daPercent / 100);
 
     // E. Monthly Gross
     const gross = basic + da + hra + ta;
@@ -413,26 +401,32 @@ function updateCalculations() {
   }
 
   // 3. Arrears & Total Gross Salary
-  const marchBaseTa = getBaseTaRate(state.payLevel, state.basicPay, state.isHigherTpta);
-  state.aprilArrears = 3 * ((state.basicPay * 0.02) + (marchBaseTa * 0.02));
-  state.octoberArrears = 3 * ((state.basicPay * 0.03) + (marchBaseTa * 0.03));
+  const diffApr = (state.daRateP2 - state.daRateP1) / 100;
+  const diffOct = (state.daRateP3 - state.daRateP2) / 100;
+
+  state.aprilArrears = 3 * ((state.basicPay * diffApr) + (state.baseTaRate * diffApr));
+  state.octoberArrears = 3 * ((state.basicPay * diffOct) + (state.baseTaRate * diffOct));
 
   state.annualGrossSalary = state.months.reduce((sum, m) => sum + m.gross, 0);
-  state.totalGrossIncome = state.annualGrossSalary + state.aprilArrears + state.octoberArrears + state.ceaReceived;
+  
+  // Total Gross Income includes salary + standard arrears + promotion arrears + LTC encashment + CEA received
+  state.totalGrossIncome = state.annualGrossSalary + state.aprilArrears + state.octoberArrears + state.ceaReceived + state.arrPromo + state.elLtc;
 
   // 4. Tax logic (Old vs New Regime)
-  const exemptHra = calculateHraExemption(state.months, state.rentPaid, state.cityTier, state.isQuarters);
-  const exemptCea = state.ceaChildren * 1200; // max ₹2400
-  const exemptLtc = state.exemptionLtc;
+  const exemptHra = calculateHraExemption(state.months, state.rentPaid, state.cityTier, state.hraRateSelect);
+  const exemptCea = Math.min(state.ceaChildren, 2) * 1200; 
+  const exemptLtc = state.elLtc; // Fully exempt under Old Regime Section 10(5)
+  const total80C = state.deduct80cLic + state.deduct80cPli + state.deduct80cGpf + state.deduct80cTuition + state.deduct80cHousing + state.deduct80cInsurance;
 
   const oldTaxObj = calculateOldRegimeTax(
     state.totalGrossIncome,
     exemptHra, exemptCea, exemptLtc,
     state.deduct24b, state.deduct80E, state.deductProfTax,
-    state.deduct80C, state.deduct80D, state.deductNps
+    total80C, state.deduct80D, state.deductNps
   );
   state.taxOld = {
     ...oldTaxObj,
+    total80C,
     netLiability: oldTaxObj.totalTax - state.tdsPaid
   };
 
@@ -460,6 +454,11 @@ function renderOutputs() {
   const p2Months = state.months.slice(1, 7);
   const p3Months = state.months.slice(7, 12);
 
+  // Dynamic labels for Period 1, 2, and 3
+  document.getElementById("label-monthly-gross-p1").innerText = `Period 1 (March - ${state.daRateP1}%)`;
+  document.getElementById("label-monthly-gross-p2").innerText = `Period 2 (Apr-Sep - ${state.daRateP2}%)`;
+  document.getElementById("label-monthly-gross-p3").innerText = `Period 3 (Oct-Feb - ${state.daRateP3}%)`;
+
   // Render Salary tab values
   document.getElementById("monthly-gross-p1").innerText = formatPeriodValues(p1Months, "gross");
   document.getElementById("monthly-gross-p2").innerText = formatPeriodValues(p2Months, "gross");
@@ -472,9 +471,9 @@ function renderOutputs() {
   document.getElementById("breakdown-basic-p2").innerText = formatPeriodValues(p2Months, "basic");
   document.getElementById("breakdown-basic-p3").innerText = formatPeriodValues(p3Months, "basic");
   
-  document.getElementById("breakdown-da-p1").innerText = `${formatPeriodValues(p1Months, "da")} (53%)`;
-  document.getElementById("breakdown-da-p2").innerText = `${formatPeriodValues(p2Months, "da")} (55%)`;
-  document.getElementById("breakdown-da-p3").innerText = `${formatPeriodValues(p3Months, "da")} (58%)`;
+  document.getElementById("breakdown-da-p1").innerText = `${formatPeriodValues(p1Months, "da")} (${state.daRateP1}%)`;
+  document.getElementById("breakdown-da-p2").innerText = `${formatPeriodValues(p2Months, "da")} (${state.daRateP2}%)`;
+  document.getElementById("breakdown-da-p3").innerText = `${formatPeriodValues(p3Months, "da")} (${state.daRateP3}%)`;
 
   document.getElementById("breakdown-hra-p1").innerText = state.isQuarters ? "₹0 (Qtrs)" : formatPeriodValues(p1Months, "hra");
   document.getElementById("breakdown-hra-p2").innerText = state.isQuarters ? "₹0 (Qtrs)" : formatPeriodValues(p2Months, "hra");
@@ -491,40 +490,70 @@ function renderOutputs() {
   // HRA Notice handling
   const hraNoticeEl = document.getElementById("hra-notice");
   const hraNoticeText = document.getElementById("hra-notice-text");
+  const rentPaidInput = document.getElementById("rent-paid");
 
   if (state.isQuarters) {
     hraNoticeEl.style.display = "flex";
     hraNoticeText.innerText = "Staying in Official Quarters. HRA is set to ₹0.";
+    if (rentPaidInput) rentPaidInput.disabled = true;
   } else {
     hraNoticeEl.style.display = "flex";
-    hraNoticeText.innerText = "HRA rates are automatically upgraded to 30%/20%/10% since DA is > 50% in all periods of FY 2025-26.";
+    hraNoticeText.innerText = `HRA rates are automatically upgraded to 30%/20%/10% (Selected: ${state.hraRateSelect}%).`;
+    if (rentPaidInput) rentPaidInput.disabled = false;
   }
+
+
+  // Explicit Exemption Displays (Requirement 3)
+  const exempt24b = Math.min(state.deduct24b, 200000);
+  document.getElementById("exemption-24b-display").innerText = "Housing Loan Interest Exemption: " + formatCurrency(exempt24b);
+
+  const exemptCea = Math.min(state.ceaChildren, 2) * 1200;
+  document.getElementById("exemption-cea-display").innerText = "Children Education Allowance Exemption: " + formatCurrency(exemptCea);
+
+  document.getElementById("exemption-hra-display").innerText = "House Rent Allowance Exemption: " + formatCurrency(state.taxOld.exemptHra);
+
+  const exempt80d = Math.min(state.deduct80D, 25000);
+  document.getElementById("exemption-80d-display").innerText = "Health Insurance Exemption: " + formatCurrency(exempt80d);
+
+  const exemptNps = Math.min(state.deductNps, 50000);
+  document.getElementById("exemption-nps-display").innerText = "Exemption under 80CCD (1B): " + formatCurrency(exemptNps);
+
+  document.getElementById("exemption-80c-display").innerText = "Total 80C Savings: " + formatCurrency(state.taxOld.total80C) + " (Capped at " + formatCurrency(150000) + ")";
 
   // Sync Gross Salary to Tax tab
   document.getElementById("tax-gross-display").innerText = formatCurrency(state.totalGrossIncome);
 
-  // Render Tax tab comparison values
+  // Render Tax tab comparison values (Old Regime)
+  document.getElementById("old-gross").innerText = formatCurrency(state.totalGrossIncome);
   document.getElementById("old-taxable").innerText = formatCurrency(state.taxOld.taxableIncome);
+  document.getElementById("old-base-tax").innerText = formatCurrency(state.taxOld.baseTax);
+  document.getElementById("old-cess").innerText = formatCurrency(state.taxOld.cess);
   document.getElementById("old-total-tax").innerText = formatCurrency(state.taxOld.totalTax);
 
+  // Render Tax tab comparison values (New Regime)
+  document.getElementById("new-gross").innerText = formatCurrency(state.totalGrossIncome);
   document.getElementById("new-taxable").innerText = formatCurrency(state.taxNew.taxableIncome);
+  document.getElementById("new-base-tax").innerText = formatCurrency(state.taxNew.baseTax);
+  document.getElementById("new-cess").innerText = formatCurrency(state.taxNew.cess);
   document.getElementById("new-total-tax").innerText = formatCurrency(state.taxNew.totalTax);
 
-  // Dynamic status styling on Due / Refund in comparison cards
+  // Dynamic status styling on Tax Due / Refund in comparison cards (Requirement 4)
   const oldRefundDueValEl = document.getElementById("old-refund-due-val");
   const oldRefundDueLabelEl = document.getElementById("old-refund-due-label");
   const oldRefundDueStatEl = document.getElementById("old-refund-due-stat");
 
   const oldNet = state.taxOld.netLiability;
-  oldRefundDueValEl.innerText = formatCurrency(Math.abs(oldNet));
   if (oldNet > 0) {
-    oldRefundDueLabelEl.innerText = "Tax Due";
+    oldRefundDueLabelEl.innerText = "Tax Due / Refund";
+    oldRefundDueValEl.innerText = `${formatCurrency(oldNet)} (Tax Due)`;
     oldRefundDueStatEl.className = "regime-stat highlight-stat status-due";
   } else if (oldNet < 0) {
-    oldRefundDueLabelEl.innerText = "Refund";
+    oldRefundDueLabelEl.innerText = "Tax Due / Refund";
+    oldRefundDueValEl.innerText = `${formatCurrency(Math.abs(oldNet))} (Refund)`;
     oldRefundDueStatEl.className = "regime-stat highlight-stat status-refund";
   } else {
-    oldRefundDueLabelEl.innerText = "Net Due/Refund";
+    oldRefundDueLabelEl.innerText = "Tax Due / Refund";
+    oldRefundDueValEl.innerText = formatCurrency(0);
     oldRefundDueStatEl.className = "regime-stat highlight-stat";
   }
 
@@ -533,15 +562,17 @@ function renderOutputs() {
   const newRefundDueStatEl = document.getElementById("new-refund-due-stat");
 
   const newNet = state.taxNew.netLiability;
-  newRefundDueValEl.innerText = formatCurrency(Math.abs(newNet));
   if (newNet > 0) {
-    newRefundDueLabelEl.innerText = "Tax Due";
+    newRefundDueLabelEl.innerText = "Tax Due / Refund";
+    newRefundDueValEl.innerText = `${formatCurrency(newNet)} (Tax Due)`;
     newRefundDueStatEl.className = "regime-stat highlight-stat status-due";
   } else if (newNet < 0) {
-    newRefundDueLabelEl.innerText = "Refund";
+    newRefundDueLabelEl.innerText = "Tax Due / Refund";
+    newRefundDueValEl.innerText = `${formatCurrency(Math.abs(newNet))} (Refund)`;
     newRefundDueStatEl.className = "regime-stat highlight-stat status-refund";
   } else {
-    newRefundDueLabelEl.innerText = "Net Due/Refund";
+    newRefundDueLabelEl.innerText = "Tax Due / Refund";
+    newRefundDueValEl.innerText = formatCurrency(0);
     newRefundDueStatEl.className = "regime-stat highlight-stat";
   }
 
@@ -571,7 +602,6 @@ function renderOutputs() {
 
   // Render 87A rebate & marginal relief notifications in Tax tab
   const rebateNotice = document.getElementById("rebate-87a-notice");
-  const reliefNotice = document.getElementById("marginal-relief-notice");
 
   if (state.taxNew.taxableIncome > 0 && state.taxNew.taxableIncome <= 1200000) {
     rebateNotice.style.display = "flex";
@@ -580,21 +610,17 @@ function renderOutputs() {
     rebateNotice.style.display = "none";
   }
 
-  if (state.taxNew.taxableIncome > 1200000 && state.taxNew.rebate > 0) {
-    reliefNotice.style.display = "flex";
-  } else {
-    reliefNotice.style.display = "none";
-  }
-
   // 4. Render Summary tab values
+  document.getElementById("sum-financial-year").innerText = state.financialYear;
+
   // Salary Table
   document.getElementById("sum-basic-p1").innerText = formatPeriodValues(p1Months, "basic");
   document.getElementById("sum-basic-p2").innerText = formatPeriodValues(p2Months, "basic");
   document.getElementById("sum-basic-p3").innerText = formatPeriodValues(p3Months, "basic");
   
-  document.getElementById("sum-da-p1").innerText = `${formatPeriodValues(p1Months, "da")} (53%)`;
-  document.getElementById("sum-da-p2").innerText = `${formatPeriodValues(p2Months, "da")} (55%)`;
-  document.getElementById("sum-da-p3").innerText = `${formatPeriodValues(p3Months, "da")} (58%)`;
+  document.getElementById("sum-da-p1").innerText = `${formatPeriodValues(p1Months, "da")} (${state.daRateP1}%)`;
+  document.getElementById("sum-da-p2").innerText = `${formatPeriodValues(p2Months, "da")} (${state.daRateP2}%)`;
+  document.getElementById("sum-da-p3").innerText = `${formatPeriodValues(p3Months, "da")} (${state.daRateP3}%)`;
 
   document.getElementById("sum-hra-p1").innerText = state.isQuarters ? "₹0 (Qtrs)" : formatPeriodValues(p1Months, "hra");
   document.getElementById("sum-hra-p2").innerText = state.isQuarters ? "₹0 (Qtrs)" : formatPeriodValues(p2Months, "hra");
@@ -611,6 +637,8 @@ function renderOutputs() {
   document.getElementById("sum-arr-apr").innerText = formatCurrency(state.aprilArrears);
   document.getElementById("sum-arr-oct").innerText = formatCurrency(state.octoberArrears);
   document.getElementById("sum-cea-rec").innerText = formatCurrency(state.ceaReceived);
+  document.getElementById("sum-arr-promo").innerText = formatCurrency(state.arrPromo);
+  document.getElementById("sum-el-ltc").innerText = formatCurrency(state.elLtc);
   document.getElementById("sum-annual-gross").innerText = formatCurrency(state.totalGrossIncome);
 
   // Tax Table details
@@ -620,13 +648,13 @@ function renderOutputs() {
   document.getElementById("sum-ex-hra").innerText = "- " + formatCurrency(state.taxOld.exemptHra);
   document.getElementById("sum-ex-cea").innerText = "- " + formatCurrency(state.taxOld.exemptCea);
   document.getElementById("sum-ex-ltc").innerText = "- " + formatCurrency(state.taxOld.exemptLtc);
-  document.getElementById("sum-ex-24b").innerText = "- " + formatCurrency(Math.min(state.deduct24b, 200000));
+  document.getElementById("sum-ex-24b").innerText = "- " + formatCurrency(exempt24b);
   document.getElementById("sum-ex-80e").innerText = "- " + formatCurrency(state.deduct80E);
   document.getElementById("sum-ex-prof").innerText = "- " + formatCurrency(state.deductProfTax);
 
-  document.getElementById("sum-80c").innerText = "- " + formatCurrency(Math.min(state.deduct80C, 150000));
-  document.getElementById("sum-80d").innerText = "- " + formatCurrency(Math.min(state.deduct80D, 25000));
-  document.getElementById("sum-nps").innerText = "- " + formatCurrency(Math.min(state.deductNps, 50000));
+  document.getElementById("sum-80c").innerText = "- " + formatCurrency(Math.min(state.taxOld.total80C, 150000));
+  document.getElementById("sum-80d").innerText = "- " + formatCurrency(exempt80d);
+  document.getElementById("sum-nps").innerText = "- " + formatCurrency(exemptNps);
 
   document.getElementById("sum-taxable-old").innerText = formatCurrency(state.taxOld.taxableIncome);
   document.getElementById("sum-taxable-new").innerText = formatCurrency(state.taxNew.taxableIncome);
@@ -669,7 +697,7 @@ function renderOutputs() {
     sumNetNewEl.className = "text-right text-bold";
   }
 
-  // Set recommendation card text in Summary tab
+  // Set recommendation card text in Summary tab (Requirement 4)
   const recBadge = document.getElementById("sum-recommendation");
   if (state.taxOld.totalTax < state.taxNew.totalTax) {
     recBadge.className = "recommendation-badge alert-success";
@@ -791,7 +819,7 @@ function setupExportActions() {
     const summaryText = `----------------------------------------
 7TH CPC SALARY & INCOME TAX SUMMARY ASSESSMENT
 ----------------------------------------
-FINANCIAL YEAR: FY 2025-26
+FINANCIAL YEAR: FY ${state.financialYear}
 ASSESSMENT YEAR: AY 2026-27
 
 SALARY PARAMETERS:
@@ -800,26 +828,30 @@ SALARY PARAMETERS:
 - Increment Amount: ${formatCurrency(state.incrementAmount)}
 - Increment Month: ${state.incrementMonth}
 - Staying in Official Quarters: ${state.isQuarters ? "Yes" : "No"}
+- Rate of House Rent Allowance: ${state.hraRateSelect}%
+- Basic Rate of Transport Allowance: ${state.baseTaRate}
 - HRA City Classification: Class ${state.cityTier}
 - Higher TPTA City (Category A): ${state.isHigherTpta ? "Yes" : "No"}
-- Children Education Allowance Received: ${formatCurrency(state.ceaReceived)}
+- Children Education Allowance: ${formatCurrency(state.ceaReceived)}
+- Arrears received due to promotion: ${formatCurrency(state.arrPromo)}
+- EL encashed while availing LTC: ${formatCurrency(state.elLtc)}
 
 PERIOD BREAKDOWNS (12-MONTH SIMULATION):
-* Period 1 (March - 1 month) | DA: 53%
+* Period 1 (March - 1 month) | DA: ${state.daRateP1}%
   - Monthly Basic: ${formatPeriodValues(p1Months, "basic")}
   - Monthly DA: ${formatPeriodValues(p1Months, "da")}
   - Monthly HRA: ${state.isQuarters ? "₹0 (Qtrs)" : formatPeriodValues(p1Months, "hra")}
   - Monthly TA: ${formatPeriodValues(p1Months, "ta")}
   - Monthly Gross: ${formatPeriodValues(p1Months, "gross")}
 
-* Period 2 (Apr - Sep - 6 months) | DA: 55%
+* Period 2 (Apr - Sep - 6 months) | DA: ${state.daRateP2}%
   - Monthly Basic: ${formatPeriodValues(p2Months, "basic")}
   - Monthly DA: ${formatPeriodValues(p2Months, "da")}
   - Monthly HRA: ${state.isQuarters ? "₹0 (Qtrs)" : formatPeriodValues(p2Months, "hra")}
   - Monthly TA: ${formatPeriodValues(p2Months, "ta")}
   - Monthly Gross: ${formatPeriodValues(p2Months, "gross")}
 
-* Period 3 (Oct - Feb - 5 months) | DA: 58%
+* Period 3 (Oct - Feb - 5 months) | DA: ${state.daRateP3}%
   - Monthly Basic: ${formatPeriodValues(p3Months, "basic")}
   - Monthly DA: ${formatPeriodValues(p3Months, "da")}
   - Monthly HRA: ${state.isQuarters ? "₹0 (Qtrs)" : formatPeriodValues(p3Months, "hra")}
@@ -829,35 +861,36 @@ PERIOD BREAKDOWNS (12-MONTH SIMULATION):
 ARREARS & ALLOWANCES:
 - April Arrears (3 months): ${formatCurrency(state.aprilArrears)}
 - October Arrears (3 months): ${formatCurrency(state.octoberArrears)}
-- Children Education Allowance (CEA) Received: ${formatCurrency(state.ceaReceived)}
 
 ANNUAL SUMS:
 - Annual Gross Salary (Computed): ${formatCurrency(state.annualGrossSalary)}
 - Total Gross Income: ${formatCurrency(state.totalGrossIncome)}
 
 TAX ASSESSMENT:
-1. OLD TAX REGIME:
+1. TAX AS PER OLD REGIME:
+   - Total Gross Income: ${formatCurrency(state.totalGrossIncome)}
    - Taxable Income: ${formatCurrency(state.taxOld.taxableIncome)}
-   - Section 10(13A) HRA Exemption: ${formatCurrency(state.taxOld.exemptHra)} (Rent Paid: ${formatCurrency(state.rentPaid)}/mo)
-   - Section 10(14) CEA Exemption: ${formatCurrency(state.taxOld.exemptCea)}
-   - Section 10(5) LTC Exemption: ${formatCurrency(state.taxOld.exemptLtc)}
-   - Section 24(b) Housing Loan Interest: ${formatCurrency(Math.min(state.deduct24b, 200000))}
-   - Section 80E Education Loan Interest: ${formatCurrency(state.deduct80E)}
-   - Section 16(iii) Professional Tax: ${formatCurrency(state.deductProfTax)}
-   - Section 80C Deductions: ${formatCurrency(Math.min(state.deduct80C, 150000))}
-   - Section 80D Medical Insurance: ${formatCurrency(Math.min(state.deduct80D, 25000))}
-   - NPS Sec 80CCD(1B) Contribution: ${formatCurrency(Math.min(state.deductNps, 50000))}
+   - House Rent Allowance Exemption: ${formatCurrency(state.taxOld.exemptHra)} (Rent Paid: ${formatCurrency(state.rentPaid)}/yr)
+   - Children Education Allowance Exemption: ${formatCurrency(state.taxOld.exemptCea)}
+   - EL encashed while availing LTC: ${formatCurrency(state.taxOld.exemptLtc)}
+   - Housing Loan Interest Exemption: ${formatCurrency(Math.min(state.deduct24b, 200000))}
+   - Education Loan Interest Paid during the FY: ${formatCurrency(state.deduct80E)}
+   - Professional Tax: ${formatCurrency(state.deductProfTax)}
+   - Savings under 80 C: ${formatCurrency(Math.min(state.taxOld.total80C, 150000))}
+   - Health Insurance Exemption: ${formatCurrency(Math.min(state.deduct80D, 25000))}
+   - Exemption under 80CCD (1B): ${formatCurrency(Math.min(state.deductNps, 50000))}
    - Total Deductions & Exemptions: ${formatCurrency(state.taxOld.deductionsTotal)}
-   - Total Tax (incl. Cess): ${formatCurrency(state.taxOld.totalTax)}
-   - TDS Paid: ${formatCurrency(state.tdsPaid)}
-   - Net Payable/Refund: ${state.taxOld.netLiability > 0 ? "Tax Due: " : "Refund: "}${formatCurrency(Math.abs(state.taxOld.netLiability))}
+   - Total Income tax: ${formatCurrency(state.taxOld.totalTax)}
+   - Total Income Tax paid: ${formatCurrency(state.tdsPaid)}
+   - Tax Due / Refund: ${state.taxOld.netLiability > 0 ? "Tax Due: " : "Refund: "}${formatCurrency(Math.abs(state.taxOld.netLiability))}
 
-2. NEW TAX REGIME (DEFAULT):
+2. TAX AS PER NEW REGIME (DEFAULT):
+   - Total Gross Income: ${formatCurrency(state.totalGrossIncome)}
    - Taxable Income: ${formatCurrency(state.taxNew.taxableIncome)}
    - Standard Deduction: ${formatCurrency(75000)}
-   - Total Tax (incl. Cess): ${formatCurrency(state.taxNew.totalTax)}
-   - TDS Paid: ${formatCurrency(state.tdsPaid)}
-   - Net Payable/Refund: ${state.taxNew.netLiability > 0 ? "Tax Due: " : "Refund: "}${formatCurrency(Math.abs(state.taxNew.netLiability))}
+   - Total Income tax: ${formatCurrency(state.taxNew.totalTax)}
+   - Total Income Tax paid: ${formatCurrency(state.tdsPaid)}
+   - Tax Due / Refund: ${state.taxNew.netLiability > 0 ? "Tax Due: " : "Refund: "}${formatCurrency(Math.abs(state.taxNew.netLiability))}
 
 RECOMMENDATION:
 ${advice}
@@ -887,7 +920,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const basicPayInput = document.getElementById("basic-pay");
   const incrementAmountInput = document.getElementById("increment-amount");
   const incrementMonthSelect = document.getElementById("increment-month");
-  const ceaReceivedInput = document.getElementById("cea-received");
+  const financialYearSelect = document.getElementById("financial-year");
+
+  const daRateP1Select = document.getElementById("da-rate-p1");
+  const daRateP2Select = document.getElementById("da-rate-p2");
+  const daRateP3Select = document.getElementById("da-rate-p3");
+
+  const baseTaRateSelect = document.getElementById("base-ta-rate");
+  const hraRateSelect = document.getElementById("hra-rate-select");
   const quartersToggle = document.getElementById("quarters-toggle");
   const tptaToggle = document.getElementById("tpta-toggle");
   const payLevelSelect = document.getElementById("pay-level");
@@ -895,12 +935,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const cityTierRadios = document.getElementsByName("city-tier");
   const rentPaidInput = document.getElementById("rent-paid");
   const ceaChildrenSelect = document.getElementById("cea-children");
-  const exemptionLtcInput = document.getElementById("exemption-ltc");
+  const ceaReceivedInput = document.getElementById("cea-received");
+
+  const arrPromoInput = document.getElementById("arr-promo");
+  const elLtcInput = document.getElementById("el-ltc");
 
   const deduct24bInput = document.getElementById("deduct-24b");
   const deduct80EInput = document.getElementById("deduct-80e");
   const deductProfTaxInput = document.getElementById("deduct-prof-tax");
-  const deduct80CInput = document.getElementById("deduct-80c");
+
+  const deduct80cLicInput = document.getElementById("deduct-80c-lic");
+  const deduct80cPliInput = document.getElementById("deduct-80c-pli");
+  const deduct80cGpfInput = document.getElementById("deduct-80c-gpf");
+  const deduct80cTuitionInput = document.getElementById("deduct-80c-tuition");
+  const deduct80cHousingInput = document.getElementById("deduct-80c-housing");
+  const deduct80cInsuranceInput = document.getElementById("deduct-80c-insurance");
+
   const deduct80DInput = document.getElementById("deduct-80d");
   const deductNpsInput = document.getElementById("deduct-nps");
   const tdsPaidInput = document.getElementById("tds-paid");
@@ -912,25 +962,75 @@ document.addEventListener("DOMContentLoaded", () => {
     basicPayInput.value = initialMinBasic;
   }
 
-  // Initial Calculation Run
+  // Smart Auto-fill bindings
+  function syncStandardRates() {
+    // 1. Auto-fill Base TA
+    const basic = parseFloat(basicPayInput.value) || 0;
+    const isHigherTpta = tptaToggle.checked;
+    const standardBaseTa = getBaseTaRate(state.payLevel, basic, isHigherTpta);
+    baseTaRateSelect.value = standardBaseTa;
+
+    // 2. Auto-fill HRA Rate
+    if (quartersToggle.checked) {
+      hraRateSelect.value = "0";
+    } else {
+      let selectedTier = "X";
+      for (const el of cityTierRadios) {
+        if (el.checked) {
+          selectedTier = el.value;
+          break;
+        }
+      }
+      if (selectedTier === "X") hraRateSelect.value = "30";
+      else if (selectedTier === "Y") hraRateSelect.value = "20";
+      else if (selectedTier === "Z") hraRateSelect.value = "10";
+    }
+  }
+
+  // Trigger auto-fill initially
+  syncStandardRates();
   updateCalculations();
 
-  // Pay Level Selector listener: auto fills starting basic pay of selected level
+  // Pay Level Selector listener: auto fills basic and syncs rates
   payLevelSelect.addEventListener("change", (e) => {
     state.payLevel = e.target.value;
     const minBasic = PAY_LEVEL_MINIMUMS[state.payLevel];
     if (minBasic) {
       basicPayInput.value = minBasic;
     }
+    syncStandardRates();
+    updateCalculations();
+  });
+
+  // TPTA, Quarters, and City Classification change updates
+  tptaToggle.addEventListener("change", () => {
+    syncStandardRates();
+    updateCalculations();
+  });
+  quartersToggle.addEventListener("change", () => {
+    syncStandardRates();
+    updateCalculations();
+  });
+  cityTierRadios.forEach(radio => {
+    radio.addEventListener("change", () => {
+      syncStandardRates();
+      updateCalculations();
+    });
+  });
+
+  // Basic Pay manually updated should also sync standard TA
+  basicPayInput.addEventListener("input", () => {
+    syncStandardRates();
     updateCalculations();
   });
 
   // General Input change listeners
   const liveInputs = [
-    basicPayInput, incrementAmountInput, ceaReceivedInput, 
-    rentPaidInput, exemptionLtcInput, 
-    deduct24bInput, deduct80EInput, deductProfTaxInput,
-    deduct80CInput, deduct80DInput, deductNpsInput, tdsPaidInput
+    incrementAmountInput, ceaReceivedInput, arrPromoInput, elLtcInput,
+    rentPaidInput, deduct24bInput, deduct80EInput, deductProfTaxInput,
+    deduct80cLicInput, deduct80cPliInput, deduct80cGpfInput, 
+    deduct80cTuitionInput, deduct80cHousingInput, deduct80cInsuranceInput,
+    deduct80DInput, deductNpsInput, tdsPaidInput
   ];
   
   liveInputs.forEach(input => {
@@ -939,13 +1039,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  incrementMonthSelect.addEventListener("change", updateCalculations);
-  quartersToggle.addEventListener("change", updateCalculations);
-  tptaToggle.addEventListener("change", updateCalculations);
-  ceaChildrenSelect.addEventListener("change", updateCalculations);
+  // Dropdowns change update calculations
+  const dropdownInputs = [
+    incrementMonthSelect, financialYearSelect,
+    daRateP1Select, daRateP2Select, daRateP3Select,
+    baseTaRateSelect, hraRateSelect, ceaChildrenSelect
+  ];
 
-  cityTierRadios.forEach(radio => {
-    radio.addEventListener("change", updateCalculations);
+  dropdownInputs.forEach(select => {
+    if (select) {
+      select.addEventListener("change", updateCalculations);
+    }
   });
 
   // Set up tab routing and lookups
