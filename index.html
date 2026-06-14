@@ -72,7 +72,7 @@
           </div>
 
           <div class="form-group">
-            <label for="pay-level" class="m3-label">Pay Level (7th CPC Matrix)</label>
+            <label for="pay-level" class="m3-label">Pay Level (1 to 18)</label>
             <div class="select-wrapper">
               <select id="pay-level" class="m3-select">
                 <option value="1">Level 1 (₹18,000)</option>
@@ -96,19 +96,23 @@
                 <option value="18">Level 18 (₹2,50,000)</option>
               </select>
             </div>
-            <span class="helper-text">Auto-fills the minimum starting March Base Pay.</span>
+            <span class="helper-text">Auto-fills the March Base Pay options.</span>
           </div>
 
           <div class="form-group">
             <label for="basic-pay" class="m3-label">Basic Pay (in the month of March 2025)</label>
-            <input type="number" id="basic-pay" class="m3-input" value="56100" min="18000" step="100" placeholder="e.g. 56100">
+            <div class="select-wrapper">
+              <select id="basic-pay" class="m3-select">
+                <!-- Dynamically populated based on Pay Level -->
+              </select>
+            </div>
             <span class="helper-text">Reference base basic pay for the starting month of March.</span>
           </div>
 
           <div class="da-split-group">
             <div class="form-group">
               <label for="increment-amount" class="m3-label">Increment</label>
-              <input type="number" id="increment-amount" class="m3-input" value="1700" min="0" step="100" placeholder="e.g. 1700">
+              <input type="number" id="increment-amount" class="m3-input" value="1700" min="0" step="100" placeholder="e.g. 1700" readonly>
             </div>
             <div class="form-group">
               <label for="increment-month" class="m3-label">Increment Month (enter 1 for January or 7 for July)</label>
@@ -184,21 +188,14 @@
             <span class="helper-text">Directly select or let auto-fill determine based on Pay Level / TPTA.</span>
           </div>
 
-          <div class="form-group" id="city-tier-group">
-            <label class="m3-label">HRA City Classification</label>
-            <div class="segmented-control">
-              <label class="segment-option">
-                <input type="radio" name="city-tier" value="X" checked>
-                <span class="segment-label">Class X</span>
-              </label>
-              <label class="segment-option">
-                <input type="radio" name="city-tier" value="Y">
-                <span class="segment-label">Class Y</span>
-              </label>
-              <label class="segment-option">
-                <input type="radio" name="city-tier" value="Z">
-                <span class="segment-label">Class Z</span>
-              </label>
+          <div class="form-group">
+            <label for="city-classification" class="m3-label">City Classification</label>
+            <div class="select-wrapper">
+              <select id="city-classification" class="m3-select">
+                <option value="X" selected>X</option>
+                <option value="Y">Y</option>
+                <option value="Z">Z</option>
+              </select>
             </div>
             <span class="helper-text">Auto-selects typical HRA rate.</span>
           </div>

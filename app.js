@@ -1,6 +1,3 @@
-// ==========================================================================
-// 7th CPC Pay Matrix Mapping (Minimum Basic Pay for entry of each level)
-// ==========================================================================
 const PAY_LEVEL_MINIMUMS = {
   "1": 18000,
   "2": 19900,
@@ -21,6 +18,28 @@ const PAY_LEVEL_MINIMUMS = {
   "16": 205400,
   "17": 225000,
   "18": 250000
+};
+
+const payMatrix = {
+  "1": [18000, 18500, 19100, 19700, 20300, 20900, 21500, 22100, 22800, 23500, 24200, 24900, 25600, 26400, 27200, 28000, 28800, 29700, 30600, 31500, 32400, 33400, 34400, 35400, 36500, 37600, 38700, 39900, 41100, 42300, 43600, 44900, 46200, 47600, 49000, 50500, 52000, 53600, 55200, 56900],
+  "2": [19900, 20500, 21100, 21700, 22400, 23100, 23800, 24500, 25200, 26000, 26800, 27600, 28400, 29300, 30200, 31100, 32000, 33000, 34000, 35000, 36100, 37200, 38300, 39400, 40600, 41800, 43100, 44400, 45700, 47100, 48500, 50000, 51500, 53000, 54600, 56200, 57900, 59600, 61400, 63200],
+  "3": [21700, 22400, 23100, 23800, 24500, 25200, 26000, 26800, 27600, 28400, 29300, 30200, 31100, 32000, 33000, 34000, 35000, 36100, 37200, 38300, 39400, 40600, 41800, 43100, 44400, 45700, 47100, 48500, 50000, 51500, 53000, 54600, 56200, 57900, 59600, 61400, 63200, 65100, 67100, 69100],
+  "4": [25500, 26300, 27100, 27900, 28700, 29600, 30500, 31400, 32300, 33300, 34300, 35300, 36400, 37500, 38600, 39800, 41000, 42200, 43500, 44800, 46100, 47500, 48900, 50400, 51900, 53500, 55100, 56800, 58500, 60300, 62100, 64000, 65900, 67900, 69900, 72000, 74200, 76400, 78700, 81100],
+  "5": [29200, 30100, 31000, 31900, 32900, 33900, 34900, 35900, 37000, 38100, 39200, 40400, 41600, 42800, 44100, 45400, 46800, 48200, 49600, 51100, 52600, 54200, 55800, 57500, 59200, 61000, 62800, 64700, 66600, 68600, 70700, 72800, 75000, 77300, 79600, 82000, 84500, 87000, 89600, 92300],
+  "6": [35400, 36500, 37600, 38700, 39900, 41100, 42300, 43600, 44900, 46200, 47600, 49000, 50500, 52000, 53600, 55200, 56900, 58600, 60400, 62200, 64100, 66000, 68000, 70000, 72100, 74300, 76500, 78800, 81200, 83600, 86100, 88700, 91400, 94100, 96900, 99800, 102800, 105900, 109100, 112400],
+  "7": [44900, 46200, 47600, 49000, 50500, 52000, 53600, 55200, 56900, 58600, 60400, 62200, 64100, 66000, 68000, 70000, 72100, 74300, 76500, 78800, 81200, 83600, 86100, 88700, 91400, 94100, 96900, 99800, 102800, 105900, 109100, 112400, 115800, 119300, 122900, 126600, 130400, 134300, 138300, 142400],
+  "8": [47600, 49000, 50500, 52000, 53600, 55200, 56900, 58600, 60400, 62200, 64100, 66000, 68000, 70000, 72100, 74300, 76500, 78800, 81200, 83600, 86100, 88700, 91400, 94100, 96900, 99800, 102800, 105900, 109100, 112400, 115800, 119300, 122900, 126600, 130400, 134300, 138300, 142400, 146700, 151100],
+  "9": [53100, 54700, 56300, 58000, 59700, 61500, 63300, 65200, 67200, 69200, 71300, 73400, 75600, 77900, 80200, 82600, 85100, 87700, 90300, 93000, 95800, 98700, 101700, 104800, 107900, 111100, 114400, 117800, 121300, 124900, 128600, 132500, 136500, 140600, 144800, 149100, 153600, 158200, 162900, 167800],
+  "10": [56100, 57800, 59500, 61300, 63100, 65000, 67000, 69000, 71100, 73200, 75400, 77700, 80000, 82400, 84900, 87400, 90000, 92700, 95500, 98400, 101400, 104400, 107500, 110700, 114000, 117400, 120900, 124500, 128200, 132000, 136000, 140100, 144300, 148600, 153100, 157700, 162400, 167300, 172300, 177500],
+  "11": [67700, 69700, 71800, 74000, 76200, 78500, 80900, 83300, 85800, 88400, 91100, 93800, 96600, 99500, 102500, 105600, 108800, 112100, 115500, 119000, 122600, 126300, 130100, 134000, 138000, 142100, 146400, 150800, 155300, 160000, 164800, 169700, 174800, 180000, 185400, 191000, 196700, 202600, 208700, 215000],
+  "12": [78800, 81200, 83600, 86100, 88700, 91400, 94100, 96900, 99800, 102800, 105900, 109100, 112400, 115800, 119300, 122900, 126600, 130400, 134300, 138300, 142400, 146700, 151100, 155600, 160300, 165100, 170100, 175200, 180500, 185900, 191500, 197200, 203100, 209200, 215500, 222000],
+  "13": [123100, 126800, 130600, 134500, 138500, 142700, 147000, 151400, 155900, 160600, 165400, 170400, 175500, 180800, 186200, 191800, 197600, 203500, 209600, 215900],
+  "13A": [131100, 135000, 139100, 143300, 147600, 152000, 156600, 161300, 166100, 171100, 176200, 181500, 186900, 192500, 198300, 204200, 210300, 216600],
+  "14": [144200, 148500, 153000, 157600, 162300, 167200, 172200, 177400, 182700, 188200, 193800, 199600, 205600, 211800, 218200],
+  "15": [182200, 187700, 193300, 199100, 205100, 211300, 217600, 224100],
+  "16": [205400, 211600, 217900, 224400],
+  "17": [225000],
+  "18": [250000]
 };
 
 // ==========================================================================
@@ -306,12 +325,40 @@ function formatPeriodValues(monthsInPeriod, key) {
 }
 
 /**
+ * Dynamically populates the Basic Pay dropdown based on Pay Level.
+ */
+function populateBasicPayDropdown(level) {
+  const basicSelect = document.getElementById("basic-pay");
+  if (!basicSelect) return;
+  basicSelect.innerHTML = "";
+  const pays = payMatrix[level] || [];
+  pays.forEach(pay => {
+    const opt = document.createElement("option");
+    opt.value = pay;
+    opt.innerText = "₹" + pay.toLocaleString("en-IN");
+    basicSelect.appendChild(opt);
+  });
+  if (pays.length > 0) {
+    if (level === "10" && pays.includes(56100)) {
+      basicSelect.value = "56100";
+    } else {
+      basicSelect.value = pays[0];
+    }
+  }
+}
+
+/**
  * Main calculation orchestration. Syncs the UI and state variables.
  */
 function updateCalculations() {
   // 1. Read Inputs from DOM
   state.basicPay = parseFloat(document.getElementById("basic-pay").value) || 0;
-  state.incrementAmount = parseFloat(document.getElementById("increment-amount").value) || 0;
+  
+  // Automatically calculate the increment: 3% of March Basic Pay, rounded to nearest 100
+  const calcIncrement = Math.round((state.basicPay * 0.03) / 100) * 100;
+  state.incrementAmount = calcIncrement;
+  document.getElementById("increment-amount").value = calcIncrement;
+
   state.incrementMonth = document.getElementById("increment-month").value;
   state.financialYear = document.getElementById("financial-year").value;
 
@@ -329,13 +376,7 @@ function updateCalculations() {
   state.arrPromo = parseFloat(document.getElementById("arr-promo").value) || 0;
   state.elLtc = parseFloat(document.getElementById("el-ltc").value) || 0;
 
-  const cityTierElements = document.getElementsByName("city-tier");
-  for (const el of cityTierElements) {
-    if (el.checked) {
-      state.cityTier = el.value;
-      break;
-    }
-  }
+  state.cityTier = document.getElementById("city-classification").value;
 
   // Deductions inputs
   state.rentPaid = parseFloat(document.getElementById("rent-paid").value) || 0;
@@ -358,7 +399,14 @@ function updateCalculations() {
   state.deductNps = parseFloat(document.getElementById("deduct-nps").value) || 0;
   state.tdsPaid = parseFloat(document.getElementById("tds-paid").value) || 0;
 
-  // 2. Perform 12-Month Simulation (March to February cycle)
+  // 2. Arrears Calculations (Calculated before the 12-month simulation so April Arrears can be injected)
+  const daDifferencePercentage = state.daRateP2 - state.daRateP1;
+  state.aprilArrears = 3 * (state.basicPay + state.baseTaRate) * (daDifferencePercentage / 100);
+
+  const diffOct = (state.daRateP3 - state.daRateP2) / 100;
+  state.octoberArrears = 3 * ((state.basicPay * diffOct) + (state.baseTaRate * diffOct));
+
+  // 3. Perform 12-Month Simulation (March to February cycle)
   state.months = [];
   const incIndex = MONTHS_ORDER.indexOf(state.incrementMonth);
 
@@ -387,7 +435,12 @@ function updateCalculations() {
     const ta = state.baseTaRate * (1 + daPercent / 100);
 
     // E. Monthly Gross
-    const gross = basic + da + hra + ta;
+    let gross = basic + da + hra + ta;
+    
+    // Inject April Arrears directly into April month (index 1) Monthly Gross
+    if (m === 1) {
+      gross += state.aprilArrears;
+    }
 
     state.months.push({
       month: monthName,
@@ -400,17 +453,11 @@ function updateCalculations() {
     });
   }
 
-  // 3. Arrears & Total Gross Salary
-  const diffApr = (state.daRateP2 - state.daRateP1) / 100;
-  const diffOct = (state.daRateP3 - state.daRateP2) / 100;
-
-  state.aprilArrears = 3 * ((state.basicPay * diffApr) + (state.baseTaRate * diffApr));
-  state.octoberArrears = 3 * ((state.basicPay * diffOct) + (state.baseTaRate * diffOct));
-
+  // 4. Annual Gross Salary and Total Gross Income
   state.annualGrossSalary = state.months.reduce((sum, m) => sum + m.gross, 0);
   
-  // Total Gross Income includes salary + standard arrears + promotion arrears + LTC encashment + CEA received
-  state.totalGrossIncome = state.annualGrossSalary + state.aprilArrears + state.octoberArrears + state.ceaReceived + state.arrPromo + state.elLtc;
+  // Total Gross Income includes salary + standard arrears (already inside annualGrossSalary) + October arrears + promotion arrears + LTC encashment + CEA received
+  state.totalGrossIncome = state.annualGrossSalary + state.octoberArrears + state.ceaReceived + state.arrPromo + state.elLtc;
 
   // 4. Tax logic (Old vs New Regime)
   const exemptHra = calculateHraExemption(state.months, state.rentPaid, state.cityTier, state.hraRateSelect);
@@ -932,7 +979,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const tptaToggle = document.getElementById("tpta-toggle");
   const payLevelSelect = document.getElementById("pay-level");
   
-  const cityTierRadios = document.getElementsByName("city-tier");
+  const cityClassificationSelect = document.getElementById("city-classification");
   const rentPaidInput = document.getElementById("rent-paid");
   const ceaChildrenSelect = document.getElementById("cea-children");
   const ceaReceivedInput = document.getElementById("cea-received");
@@ -957,10 +1004,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initial state setup from DOM
   state.payLevel = payLevelSelect.value;
-  const initialMinBasic = PAY_LEVEL_MINIMUMS[state.payLevel];
-  if (initialMinBasic && !basicPayInput.value) {
-    basicPayInput.value = initialMinBasic;
-  }
+  populateBasicPayDropdown(state.payLevel);
 
   // Smart Auto-fill bindings
   function syncStandardRates() {
@@ -973,14 +1017,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // 2. Auto-fill HRA Rate
     if (quartersToggle.checked) {
       hraRateSelect.value = "0";
+      hraRateSelect.disabled = true;
     } else {
-      let selectedTier = "X";
-      for (const el of cityTierRadios) {
-        if (el.checked) {
-          selectedTier = el.value;
-          break;
-        }
-      }
+      hraRateSelect.disabled = false;
+      const selectedTier = cityClassificationSelect.value;
       if (selectedTier === "X") hraRateSelect.value = "30";
       else if (selectedTier === "Y") hraRateSelect.value = "20";
       else if (selectedTier === "Z") hraRateSelect.value = "10";
@@ -991,13 +1031,10 @@ document.addEventListener("DOMContentLoaded", () => {
   syncStandardRates();
   updateCalculations();
 
-  // Pay Level Selector listener: auto fills basic and syncs rates
+  // Pay Level Selector listener: auto fills basic options and syncs rates
   payLevelSelect.addEventListener("change", (e) => {
     state.payLevel = e.target.value;
-    const minBasic = PAY_LEVEL_MINIMUMS[state.payLevel];
-    if (minBasic) {
-      basicPayInput.value = minBasic;
-    }
+    populateBasicPayDropdown(state.payLevel);
     syncStandardRates();
     updateCalculations();
   });
@@ -1011,15 +1048,13 @@ document.addEventListener("DOMContentLoaded", () => {
     syncStandardRates();
     updateCalculations();
   });
-  cityTierRadios.forEach(radio => {
-    radio.addEventListener("change", () => {
-      syncStandardRates();
-      updateCalculations();
-    });
+  cityClassificationSelect.addEventListener("change", () => {
+    syncStandardRates();
+    updateCalculations();
   });
 
   // Basic Pay manually updated should also sync standard TA
-  basicPayInput.addEventListener("input", () => {
+  basicPayInput.addEventListener("change", () => {
     syncStandardRates();
     updateCalculations();
   });
