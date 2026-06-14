@@ -1,4 +1,4 @@
-const CACHE_NAME = "cge-calc-cache-v5";
+const CACHE_NAME = "cge-calc-cache-v7";
 const ASSETS = [
   "index.html",
   "styles.css",

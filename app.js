@@ -59,24 +59,25 @@ const state = {
   hraRateSelect: 30,
   cityTier: "X",
   isHigherTpta: true,
+  isSpeciallyAbled: false,
   isQuarters: false,
   arrPromo: 0,
   elLtc: 0,
 
   // Tax Inputs & Deductions
   rentPaid: 180000,
-  ceaChildren: 2,
-  ceaReceived: 54000,
+  ceaEligibleChildren: 2,
+  ceaReceived: 0,
   deduct24b: 0,        // Section 24(b) - Capped at 2,00,000
   deduct80E: 0,        // Section 80E - No limit
-  deductProfTax: 2500, // Section 16(iii) - No limit
+  deductProfTax: 0, // Section 16(iii) - No limit
   deduct80cLic: 50000,
   deduct80cPli: 0,
   deduct80cGpf: 100000,
   deduct80cTuition: 0,
   deduct80cHousing: 0,
   deduct80cInsurance: 0,
-  deduct80D: 25000,    // Health Insurance - Capped at 25,000
+  deduct80D: 0,    // Health Insurance - Capped at 25,000
   deductNps: 50000,    // NPS 80CCD(1B) - Capped at 50,000
   tdsPaid: 0,          // Total Income Tax paid
 
@@ -380,7 +381,8 @@ function updateCalculations() {
 
   // Deductions inputs
   state.rentPaid = parseFloat(document.getElementById("rent-paid").value) || 0;
-  state.ceaChildren = parseInt(document.getElementById("cea-children").value, 10) || 0;
+  state.isSpeciallyAbled = document.getElementById("specially-abled-toggle").checked;
+  state.ceaEligibleChildren = parseInt(document.getElementById("cea-eligible-children").value, 10) || 0;
   state.ceaReceived = parseFloat(document.getElementById("cea-received").value) || 0;
 
   state.deduct24b = parseFloat(document.getElementById("deduct-24b").value) || 0;
@@ -401,10 +403,11 @@ function updateCalculations() {
 
   // 2. Arrears Calculations (Calculated before the 12-month simulation so April Arrears can be injected)
   const daDifferencePercentage = state.daRateP2 - state.daRateP1;
-  state.aprilArrears = 3 * (state.basicPay + state.baseTaRate) * (daDifferencePercentage / 100);
+  const basicTaForArrears = state.isSpeciallyAbled ? (state.baseTaRate * 2) : state.baseTaRate;
+  state.aprilArrears = 3 * (state.basicPay + basicTaForArrears) * (daDifferencePercentage / 100);
 
   const diffOct = (state.daRateP3 - state.daRateP2) / 100;
-  state.octoberArrears = 3 * ((state.basicPay * diffOct) + (state.baseTaRate * diffOct));
+  state.octoberArrears = 3 * ((state.basicPay * diffOct) + (basicTaForArrears * diffOct));
 
   // 3. Perform 12-Month Simulation (March to February cycle)
   state.months = [];
@@ -432,7 +435,8 @@ function updateCalculations() {
     const hra = calculateHra(basic, state.hraRateSelect);
 
     // D. TA
-    const ta = state.baseTaRate * (1 + daPercent / 100);
+    const basicTaForMonth = state.isSpeciallyAbled ? (state.baseTaRate * 2) : state.baseTaRate;
+    const ta = basicTaForMonth * (1 + daPercent / 100);
 
     // E. Monthly Gross
     let gross = basic + da + hra + ta;
@@ -461,7 +465,7 @@ function updateCalculations() {
 
   // 4. Tax logic (Old vs New Regime)
   const exemptHra = calculateHraExemption(state.months, state.rentPaid, state.cityTier, state.hraRateSelect);
-  const exemptCea = Math.min(state.ceaChildren, 2) * 1200; 
+  const exemptCea = state.ceaEligibleChildren * 1200; 
   const exemptLtc = state.elLtc; // Fully exempt under Old Regime Section 10(5)
   const total80C = state.deduct80cLic + state.deduct80cPli + state.deduct80cGpf + state.deduct80cTuition + state.deduct80cHousing + state.deduct80cInsurance;
 
@@ -554,8 +558,8 @@ function renderOutputs() {
   const exempt24b = Math.min(state.deduct24b, 200000);
   document.getElementById("exemption-24b-display").innerText = "Housing Loan Interest Exemption: " + formatCurrency(exempt24b);
 
-  const exemptCea = Math.min(state.ceaChildren, 2) * 1200;
-  document.getElementById("exemption-cea-display").innerText = "Children Education Allowance Exemption: " + formatCurrency(exemptCea);
+  const exemptCea = state.ceaEligibleChildren * 1200;
+  document.getElementById("exemption-cea-display").innerText = "Children Education Allowance (CEA) Exemption limit: " + formatCurrency(exemptCea);
 
   document.getElementById("exemption-hra-display").innerText = "House Rent Allowance Exemption: " + formatCurrency(state.taxOld.exemptHra);
 
@@ -918,7 +922,7 @@ TAX ASSESSMENT:
    - Total Gross Income: ${formatCurrency(state.totalGrossIncome)}
    - Taxable Income: ${formatCurrency(state.taxOld.taxableIncome)}
    - House Rent Allowance Exemption: ${formatCurrency(state.taxOld.exemptHra)} (Rent Paid: ${formatCurrency(state.rentPaid)}/yr)
-   - Children Education Allowance Exemption: ${formatCurrency(state.taxOld.exemptCea)}
+   - Children Education Allowance (CEA) Exemption limit: ${formatCurrency(state.taxOld.exemptCea)}
    - EL encashed while availing LTC: ${formatCurrency(state.taxOld.exemptLtc)}
    - Housing Loan Interest Exemption: ${formatCurrency(Math.min(state.deduct24b, 200000))}
    - Education Loan Interest Paid during the FY: ${formatCurrency(state.deduct80E)}
@@ -981,7 +985,8 @@ document.addEventListener("DOMContentLoaded", () => {
   
   const cityClassificationSelect = document.getElementById("city-classification");
   const rentPaidInput = document.getElementById("rent-paid");
-  const ceaChildrenSelect = document.getElementById("cea-children");
+  const speciallyAbledToggle = document.getElementById("specially-abled-toggle");
+  const ceaEligibleChildrenSelect = document.getElementById("cea-eligible-children");
   const ceaReceivedInput = document.getElementById("cea-received");
 
   const arrPromoInput = document.getElementById("arr-promo");
@@ -1008,6 +1013,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Smart Auto-fill bindings
   function syncStandardRates() {
+    // TPTA Logic: If City Classification is Y or Z, automatically uncheck and disable the "Higher TPTA City" toggle. Enable it only if "X" is selected.
+    const selectedTier = cityClassificationSelect.value;
+    if (selectedTier === "Y" || selectedTier === "Z") {
+      tptaToggle.checked = false;
+      tptaToggle.disabled = true;
+    } else {
+      tptaToggle.disabled = false;
+    }
+
     // 1. Auto-fill Base TA
     const basic = parseFloat(basicPayInput.value) || 0;
     const isHigherTpta = tptaToggle.checked;
@@ -1020,7 +1034,6 @@ document.addEventListener("DOMContentLoaded", () => {
       hraRateSelect.disabled = true;
     } else {
       hraRateSelect.disabled = false;
-      const selectedTier = cityClassificationSelect.value;
       if (selectedTier === "X") hraRateSelect.value = "30";
       else if (selectedTier === "Y") hraRateSelect.value = "20";
       else if (selectedTier === "Z") hraRateSelect.value = "10";
@@ -1042,6 +1055,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // TPTA, Quarters, and City Classification change updates
   tptaToggle.addEventListener("change", () => {
     syncStandardRates();
+    updateCalculations();
+  });
+  speciallyAbledToggle.addEventListener("change", () => {
     updateCalculations();
   });
   quartersToggle.addEventListener("change", () => {
@@ -1078,7 +1094,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const dropdownInputs = [
     incrementMonthSelect, financialYearSelect,
     daRateP1Select, daRateP2Select, daRateP3Select,
-    baseTaRateSelect, hraRateSelect, ceaChildrenSelect
+    baseTaRateSelect, hraRateSelect, ceaEligibleChildrenSelect
   ];
 
   dropdownInputs.forEach(select => {

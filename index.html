@@ -227,6 +227,17 @@
             </label>
           </div>
 
+          <div class="form-group toggle-group">
+            <div class="toggle-info">
+              <label for="specially-abled-toggle" class="toggle-title">Specially Abled Employee (Double Transport Allowance)</label>
+              <span class="helper-text">Enable to double the Basic Rate of Transport Allowance.</span>
+            </div>
+            <label class="m3-switch">
+              <input type="checkbox" id="specially-abled-toggle">
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+
           <div class="divider"></div>
           <h4 class="card-subtitle" style="margin-top: 8px; font-weight:600;">Arrears & Additional Receipts</h4>
 
@@ -352,20 +363,21 @@
           </div>
 
           <div class="form-group">
-            <label for="cea-children" class="m3-label">Children for Education Allowance (CEA)</label>
-            <div class="select-wrapper">
-              <select id="cea-children" class="m3-select">
-                <option value="0">0 Children (Exemption: ₹0)</option>
-                <option value="1">1 Child (Exemption: ₹1,200/yr)</option>
-                <option value="2" selected>2 Children (Exemption: ₹2,400/yr)</option>
-              </select>
-            </div>
+            <label for="cea-received" class="m3-label">Children Education Allowance (CEA) Received</label>
+            <input type="number" id="cea-received" class="m3-input" value="0" min="0" step="1000" placeholder="e.g. 0">
+            <span class="helper-text text-bold text-primary" id="exemption-cea-display">Children Education Allowance (CEA) Exemption limit: ₹0</span>
           </div>
 
           <div class="form-group">
-            <label for="cea-received" class="m3-label">Children Education Allowance</label>
-            <input type="number" id="cea-received" class="m3-input" value="54000" min="0" step="1000" placeholder="e.g. 54000">
-            <span class="helper-text text-bold text-primary" id="exemption-cea-display">Children Education Allowance Exemption: ₹0</span>
+            <label for="cea-eligible-children" class="m3-label">Number of eligible children for CEA (Select 3 if 2nd birth was twins)</label>
+            <div class="select-wrapper">
+              <select id="cea-eligible-children" class="m3-select">
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2" selected>2</option>
+                <option value="3">3</option>
+              </select>
+            </div>
           </div>
 
           <div class="divider"></div>
@@ -384,7 +396,7 @@
 
           <div class="form-group">
             <label for="deduct-prof-tax" class="m3-label">Professional Tax</label>
-            <input type="number" id="deduct-prof-tax" class="m3-input" value="2500" min="0" step="500" placeholder="e.g. 2500">
+            <input type="number" id="deduct-prof-tax" class="m3-input" value="0" min="0" step="500" placeholder="e.g. 0">
           </div>
 
           <div class="form-group">
@@ -398,7 +410,7 @@
 
           <div class="form-group">
             <label for="deduct-80d" class="m3-label">Health Insurance</label>
-            <input type="number" id="deduct-80d" class="m3-input" value="25000" min="0" step="1000" placeholder="e.g. 25000">
+            <input type="number" id="deduct-80d" class="m3-input" value="0" min="0" step="1000" placeholder="e.g. 0">
             <span class="helper-text text-bold text-primary" id="exemption-80d-display">Health Insurance Exemption: ₹0</span>
           </div>
 
@@ -663,7 +675,7 @@
                     <td class="text-right">N/A</td>
                   </tr>
                   <tr class="exemption-row">
-                    <td>Children Education Allowance Exemption</td>
+                    <td>Children Education Allowance (CEA) Exemption limit</td>
                     <td class="text-right" id="sum-ex-cea">-₹0</td>
                     <td class="text-right">N/A</td>
                   </tr>
