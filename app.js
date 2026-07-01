@@ -576,6 +576,8 @@ function renderOutputs() {
 
   // Render Tax tab comparison values (Old Regime)
   document.getElementById("old-gross").innerText = formatCurrency(state.totalGrossIncome);
+  document.getElementById("old-gross-cea").innerText = formatCurrency(state.ceaReceived);
+  document.getElementById("old-gross-ltc").innerText = formatCurrency(state.elLtc);
   document.getElementById("old-taxable").innerText = formatCurrency(state.taxOld.taxableIncome);
   document.getElementById("old-base-tax").innerText = formatCurrency(state.taxOld.baseTax);
   document.getElementById("old-cess").innerText = formatCurrency(state.taxOld.cess);
@@ -583,6 +585,8 @@ function renderOutputs() {
 
   // Render Tax tab comparison values (New Regime)
   document.getElementById("new-gross").innerText = formatCurrency(state.totalGrossIncome);
+  document.getElementById("new-gross-cea").innerText = formatCurrency(state.ceaReceived);
+  document.getElementById("new-gross-ltc").innerText = formatCurrency(state.elLtc);
   document.getElementById("new-taxable").innerText = formatCurrency(state.taxNew.taxableIncome);
   document.getElementById("new-base-tax").innerText = formatCurrency(state.taxNew.baseTax);
   document.getElementById("new-cess").innerText = formatCurrency(state.taxNew.cess);
@@ -695,6 +699,10 @@ function renderOutputs() {
   // Tax Table details
   document.getElementById("sum-tax-gross-old").innerText = formatCurrency(state.totalGrossIncome);
   document.getElementById("sum-tax-gross-new").innerText = formatCurrency(state.totalGrossIncome);
+  document.getElementById("sum-tax-gross-old-cea").innerText = formatCurrency(state.ceaReceived);
+  document.getElementById("sum-tax-gross-new-cea").innerText = formatCurrency(state.ceaReceived);
+  document.getElementById("sum-tax-gross-old-ltc").innerText = formatCurrency(state.elLtc);
+  document.getElementById("sum-tax-gross-new-ltc").innerText = formatCurrency(state.elLtc);
   
   document.getElementById("sum-ex-hra").innerText = "- " + formatCurrency(state.taxOld.exemptHra);
   document.getElementById("sum-ex-cea").innerText = "- " + formatCurrency(state.taxOld.exemptCea);
@@ -915,11 +923,11 @@ ARREARS & ALLOWANCES:
 
 ANNUAL SUMS:
 - Annual Gross Salary (Computed): ${formatCurrency(state.annualGrossSalary)}
-- Total Gross Income: ${formatCurrency(state.totalGrossIncome)}
+- Total Gross Income: ${formatCurrency(state.totalGrossIncome)} (includes CEA: ${formatCurrency(state.ceaReceived)}, Leave Encashment: ${formatCurrency(state.elLtc)})
 
 TAX ASSESSMENT:
 1. TAX AS PER OLD REGIME:
-   - Total Gross Income: ${formatCurrency(state.totalGrossIncome)}
+   - Total Gross Income: ${formatCurrency(state.totalGrossIncome)} (includes CEA: ${formatCurrency(state.ceaReceived)}, Leave Encashment: ${formatCurrency(state.elLtc)})
    - Taxable Income: ${formatCurrency(state.taxOld.taxableIncome)}
    - House Rent Allowance Exemption: ${formatCurrency(state.taxOld.exemptHra)} (Rent Paid: ${formatCurrency(state.rentPaid)}/yr)
    - Children Education Allowance (CEA) Exemption limit: ${formatCurrency(state.taxOld.exemptCea)}
@@ -936,7 +944,7 @@ TAX ASSESSMENT:
    - Tax Due / Refund: ${state.taxOld.netLiability > 0 ? "Tax Due: " : "Refund: "}${formatCurrency(Math.abs(state.taxOld.netLiability))}
 
 2. TAX AS PER NEW REGIME (DEFAULT):
-   - Total Gross Income: ${formatCurrency(state.totalGrossIncome)}
+   - Total Gross Income: ${formatCurrency(state.totalGrossIncome)} (includes CEA: ${formatCurrency(state.ceaReceived)}, Leave Encashment: ${formatCurrency(state.elLtc)})
    - Taxable Income: ${formatCurrency(state.taxNew.taxableIncome)}
    - Standard Deduction: ${formatCurrency(75000)}
    - Total Income tax: ${formatCurrency(state.taxNew.totalTax)}
